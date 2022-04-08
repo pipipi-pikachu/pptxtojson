@@ -1,6 +1,6 @@
 这是一个派生于 [PPTX2HTML](https://github.com/g21589/PPTX2HTML) 的案例。主要用于实验和学习 PPTX 文件到 JSON 数据的转换过程，目前还远不足以用于生产环境。
 
-在线 demo 演示：https://pipipi-pikachu.github.io/pptx2json/
+在线 demo 演示（上传 PPTX 文件后打开控制台可以看到 JSON 数据）：https://pipipi-pikachu.github.io/pptx2json/
 
 相较于原版：
 - 使用更现代的语法重写（原项目年代较久远），方便阅读和理解；
