@@ -1,144 +1,8 @@
-function pptx2html(file, wrap) {
-  const processSlideList = processPPTX(file)
-  const json = []
-
-  for (const item of processSlideList) {
-    wrap.insertAdjacentHTML('beforeend', item.html)
-    json.push(item.json)
-
-  }
-  createChart()
-
-  console.log(json)
-}
-
-const chartList = []
-function createChart() {
-  for(item of chartList) {
-    const { chartID, chartType, chartData } = item
-    let option = {}
-    
-		switch (chartType) {
-			case 'lineChart':
-        option = {
-          xAxis: {
-            type: 'category',
-            data: Object.values(chartData[0].xlabels),
-          },
-          yAxis: {
-            type: 'value'
-          },
-          series: chartData.map(item => ({
-            type: 'line',
-            data: item.values.map(value => value.y),
-          }))
-        }
-				break
-			case 'barChart':
-				option = {
-          xAxis: {
-            type: 'category',
-            data: Object.values(chartData[0].xlabels),
-          },
-          yAxis: {
-            type: 'value'
-          },
-          series: chartData.map(item => ({
-            type: 'bar',
-            data: item.values.map(value => value.y),
-          }))
-        }
-				break
-			case 'stackedBarChart':
-				option = {
-          xAxis: {
-            type: 'category',
-            data: Object.values(chartData[0].xlabels),
-          },
-          yAxis: {
-            type: 'value'
-          },
-          series: chartData.map(item => ({
-            type: 'bar',
-            stack: 'total',
-            data: item.values.map(value => value.y),
-          }))
-        }
-				break
-      case 'pie3DChart':
-			case 'pieChart':
-        option = {
-          series: chartData.map(item => ({
-            name: 'Access From',
-            type: 'pie',
-            radius: '70%',
-            data: item.values.map((value, index) => ({
-              value: value.y,
-              name: item.xlabels[index],
-            })),
-          }))
-        }
-				break
-			case 'areaChart':
-				option = {
-          xAxis: {
-            type: 'category',
-            boundaryGap: false,
-            data: Object.values(chartData[0].xlabels),
-          },
-          yAxis: {
-            type: 'value'
-          },
-          series: chartData.map(item => ({
-            type: 'line',
-            areaStyle: {},
-            data: item.values.map(value => value.y),
-          }))
-        }
-        break
-			case 'stackedAreaChart':
-				option = {
-          xAxis: {
-            type: 'category',
-            boundaryGap: false,
-            data: Object.values(chartData[0].xlabels),
-          },
-          yAxis: {
-            type: 'value'
-          },
-          series: chartData.map(item => ({
-            type: 'line',
-            areaStyle: {},
-            stack: 'Total',
-            data: item.values.map(value => value.y),
-          }))
-        }
-        break
-			case 'scatterChart':
-				option = {
-          xAxis: {},
-          yAxis: {},
-          series: [
-            {
-              symbolSize: 10,
-              data: chartData[0].map((item, index) => [item, chartData[1][index]]),
-              type: 'scatter',
-            }
-          ]
-        }
-				break
-			default:
-		}
-    const chartDom = document.querySelector('#' + chartID)
-    const myChart = echarts.init(chartDom)
-    myChart.setOption(option)
-  }
-}
-
 let themeContent = null
-function processPPTX(data) {
-  const processSlideList = []
-  const zip = new JSZip(data)
+
+function pptx2json(file) {
+  const json = []
+  const zip = new JSZip(file)
 
   const filesInfo = getContentTypes(zip)
   const slideSize = getSlideSize(zip)
@@ -147,11 +11,11 @@ function processPPTX(data) {
   const numOfSlides = filesInfo['slides'].length
   for (let i = 0; i < numOfSlides; i++) {
     const filename = filesInfo['slides'][i]
-    const { html, json } = processSingleSlide(zip, filename, i, slideSize)
-    processSlideList.push({ html, json })
+    const data = processSingleSlide(zip, filename, i, slideSize)
+    json.push(data)
   }
 
-  return processSlideList
+  return json
 }
 
 function readXmlFile(zip, filename) {
@@ -248,7 +112,6 @@ function processSingleSlide(zip, sldFileName, index, slideSize) {
   const slideLayoutContent = readXmlFile(zip, layoutFilename)
   const slideLayoutTables = indexNodes(slideLayoutContent)
 
-
   // =====< Step 2 >=====
   // Read slide master filename of the slidelayout (Get slideMasterXX.xml)
   // @resName: ppt/slideLayouts/slideLayout1.xml
@@ -275,7 +138,6 @@ function processSingleSlide(zip, sldFileName, index, slideSize) {
   const slideMasterTextStyles = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:txStyles'])
   const slideMasterTables = indexNodes(slideMasterContent)
 
-
   // =====< Step 3 >=====
   const slideContent = readXmlFile(zip, sldFileName)
   const nodes = slideContent['p:sld']['p:cSld']['p:spTree']
@@ -289,25 +151,19 @@ function processSingleSlide(zip, sldFileName, index, slideSize) {
 
   const bgColor = '#' + getSlideBackgroundFill(slideContent, slideLayoutContent, slideMasterContent)
 
-  let html = `<section style="width: ${slideSize.width}px; height: ${slideSize.height}px; background-color: ${bgColor};">`
-
   const elements = []
   for (const nodeKey in nodes) {
     if (nodes[nodeKey].constructor === Array) {
       for (const node of nodes[nodeKey]) {
         const ret = processNodesInSlide(nodeKey, node, warpObj)
-        html += ret.html
-        if (ret.json) elements.push(ret.json)
+        if (ret) elements.push(ret)
       }
     } 
     else {
       const ret = processNodesInSlide(nodeKey, nodes[nodeKey], warpObj)
-      html += ret.html
-      if (ret.json) elements.push(ret.json)
+      if (ret) elements.push(ret)
     }
   }
-
-  html +=  '</section>'
 
   const json = {
     width: slideSize.width,
@@ -316,7 +172,7 @@ function processSingleSlide(zip, sldFileName, index, slideSize) {
     elements,
   }
 
-  return { html, json }
+  return json
 }
 
 function indexNodes(content) {
@@ -361,40 +217,34 @@ function indexNodes(content) {
 }
 
 function processNodesInSlide(nodeKey, nodeValue, warpObj) {
-  let html = ''
   let json
   let ret
 
   switch (nodeKey) {
     case 'p:sp': // Shape, Text
       ret = processSpNode(nodeValue, warpObj)
-      html += ret.html
-      json = ret.json
+      json = ret
       break
     case 'p:cxnSp': // Shape, Text (with connection)
       ret = processCxnSpNode(nodeValue, warpObj)
-      html += ret.html
-      json = ret.json
+      json = ret
       break
     case 'p:pic': // Picture
       ret = processPicNode(nodeValue, warpObj)
-      html += ret.html
-      json = ret.json
+      json = ret
       break
     case 'p:graphicFrame': // Chart, Diagram, Table
       ret = processGraphicFrameNode(nodeValue, warpObj)
-      html += ret.html
-      json = ret.json
+      json = ret
       break
     case 'p:grpSp': // 群組
       ret = processGroupSpNode(nodeValue, warpObj)
-      html += ret.html
-      json = ret.json
+      json = ret
       break
     default:
   }
 
-  return { html, json }
+  return json
 }
 
 function processGroupSpNode(node, warpObj) {
@@ -413,22 +263,18 @@ function processGroupSpNode(node, warpObj) {
 
   const order = node['attrs']["order"]
 
-  let html = `<div class="block group" style="z-index: ${order}; top: ${y - chy}px; left: ${x - chx}px; width: ${cx - chcx}px; height: ${cy - chcy}px;">`
-
   // Procsee all child nodes
   const elements = []
   for (const nodeKey in node) {
     if (node[nodeKey].constructor === Array) {
       for (const item of  node[nodeKey]) {
         const ret = processNodesInSlide(nodeKey, item, warpObj)
-        html += ret.html
-        if (ret.json) elements.push(ret.json)
+        if (ret) elements.push(ret)
       }
     }
     else {
       const ret = processNodesInSlide(nodeKey, node[nodeKey], warpObj)
-      html += ret.html
-      if (ret.json) elements.push(ret.json)
+      if (ret) elements.push(ret)
     }
   }
 
@@ -442,9 +288,7 @@ function processGroupSpNode(node, warpObj) {
     elements,
   }
 
-  html += '</div>'
-
-  return { html, json }
+  return json
 }
 
 function processSpNode(node, warpObj) {
@@ -491,7 +335,6 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
   const slideLayoutXfrmNode = getTextByPathList(slideLayoutSpNode, xfrmList)
   const slideMasterXfrmNode = getTextByPathList(slideMasterSpNode, xfrmList)
 
-  let html = ''
   const shapType = getTextByPathList(node, ['p:spPr', 'a:prstGeom', 'attrs', 'prst'])
 
   const { top, left } = getPosition(slideXfrmNode, slideLayoutXfrmNode, slideMasterXfrmNode)
@@ -505,267 +348,19 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
 
   if (shapType) {
     const ext = getTextByPathList(slideXfrmNode, ['a:ext', 'attrs'])
-    const w = parseInt(ext['cx']) * 96 / 914400
-    const h = parseInt(ext['cy']) * 96 / 914400
-
-    html = `<svg class="drawing" _id="${id}" _idx="${idx}" _type="${type}" _name="${name}" style="left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px; z-index: ${order};">`
+    const cx = parseInt(ext['cx']) * 96 / 914400
+    const cy = parseInt(ext['cy']) * 96 / 914400
 
     const fillColor = getShapeFill(node, true)   
     const {
       borderColor,
       borderWidth,
       borderType,
-      strokeDasharray,
     } = getBorder(node, true)
-
-    const headEndNodeAttrs = getTextByPathList(node, ['p:spPr', 'a:ln', 'a:headEnd', 'attrs'])
-    const tailEndNodeAttrs = getTextByPathList(node, ['p:spPr', 'a:ln', 'a:tailEnd', 'attrs'])
-
-    // type: none, triangle, stealth, diamond, oval, arrow
-    if (
-      (headEndNodeAttrs && (headEndNodeAttrs['type'] === 'triangle' || headEndNodeAttrs['type'] === 'arrow')) ||
-      (tailEndNodeAttrs && (tailEndNodeAttrs['type'] === 'triangle' || tailEndNodeAttrs['type'] === 'arrow'))
-    ) {
-      const triangleMarker = `<defs><marker id="markerTriangle" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" /></marker></defs>`
-      html += triangleMarker
-    }
-
-    switch (shapType) {
-      case 'accentBorderCallout1':
-      case 'accentBorderCallout2':
-      case 'accentBorderCallout3':
-      case 'accentCallout1':
-      case 'accentCallout2':
-      case 'accentCallout3':
-      case 'actionButtonBackPrevious':
-      case 'actionButtonBeginning':
-      case 'actionButtonBlank':
-      case 'actionButtonDocument':
-      case 'actionButtonEnd':
-      case 'actionButtonForwardNext':
-      case 'actionButtonHelp':
-      case 'actionButtonHome':
-      case 'actionButtonInformation':
-      case 'actionButtonMovie':
-      case 'actionButtonReturn':
-      case 'actionButtonSound':
-      case 'arc':
-      case 'bevel':
-      case 'blockArc':
-      case 'borderCallout1':
-      case 'borderCallout2':
-      case 'borderCallout3':
-      case 'bracePair':
-      case 'bracketPair':
-      case 'callout1':
-      case 'callout2':
-      case 'callout3':
-      case 'can':
-      case 'chartPlus':
-      case 'chartStar':
-      case 'chartX':
-      case 'chevron':
-      case 'chord':
-      case 'cloud':
-      case 'cloudCallout':
-      case 'corner':
-      case 'cornerTabs':
-      case 'cube':
-      case 'decagon':
-      case 'diagStripe':
-      case 'diamond':
-      case 'dodecagon':
-      case 'donut':
-      case 'doubleWave':
-      case 'downArrowCallout':
-      case 'ellipseRibbon':
-      case 'ellipseRibbon2':
-      case 'flowChartAlternateProcess':
-      case 'flowChartCollate':
-      case 'flowChartConnector':
-      case 'flowChartDecision':
-      case 'flowChartDelay':
-      case 'flowChartDisplay':
-      case 'flowChartDocument':
-      case 'flowChartExtract':
-      case 'flowChartInputOutput':
-      case 'flowChartInternalStorage':
-      case 'flowChartMagneticDisk':
-      case 'flowChartMagneticDrum':
-      case 'flowChartMagneticTape':
-      case 'flowChartManualInput':
-      case 'flowChartManualOperation':
-      case 'flowChartMerge':
-      case 'flowChartMultidocument':
-      case 'flowChartOfflineStorage':
-      case 'flowChartOffpageConnector':
-      case 'flowChartOnlineStorage':
-      case 'flowChartOr':
-      case 'flowChartPredefinedProcess':
-      case 'flowChartPreparation':
-      case 'flowChartProcess':
-      case 'flowChartPunchedCard':
-      case 'flowChartPunchedTape':
-      case 'flowChartSort':
-      case 'flowChartSummingJunction':
-      case 'flowChartTerminator':
-      case 'folderCorner':
-      case 'frame':
-      case 'funnel':
-      case 'gear6':
-      case 'gear9':
-      case 'halfFrame':
-      case 'heart':
-      case 'heptagon':
-      case 'hexagon':
-      case 'homePlate':
-      case 'horizontalScroll':
-      case 'irregularSeal1':
-      case 'irregularSeal2':
-      case 'leftArrow':
-      case 'leftArrowCallout':
-      case 'leftBrace':
-      case 'leftBracket':
-      case 'leftRightArrowCallout':
-      case 'leftRightRibbon':
-      case 'irregularSeal1':
-      case 'lightningBolt':
-      case 'lineInv':
-      case 'mathDivide':
-      case 'mathEqual':
-      case 'mathMinus':
-      case 'mathMultiply':
-      case 'mathNotEqual':
-      case 'mathPlus':
-      case 'moon':
-      case 'nonIsoscelesTrapezoid':
-      case 'noSmoking':
-      case 'octagon':
-      case 'parallelogram':
-      case 'pentagon':
-      case 'pie':
-      case 'pieWedge':
-      case 'plaque':
-      case 'plaqueTabs':
-      case 'plus':
-      case 'quadArrowCallout':
-      case 'rect':
-      case 'ribbon':
-      case 'ribbon2':
-      case 'rightArrowCallout':
-      case 'rightBrace':
-      case 'rightBracket':
-      case 'round1Rect':
-      case 'round2DiagRect':
-      case 'round2SameRect':
-      case 'rtTriangle':
-      case 'smileyFace':
-      case 'snip1Rect':
-      case 'snip2DiagRect':
-      case 'snip2SameRect':
-      case 'snipRoundRect':
-      case 'squareTabs':
-      case 'star10':
-      case 'star12':
-      case 'star16':
-      case 'star24':
-      case 'star32':
-      case 'star4':
-      case 'star5':
-      case 'star6':
-      case 'star7':
-      case 'star8':
-      case 'sun':
-      case 'teardrop':
-      case 'trapezoid':
-      case 'upArrowCallout':
-      case 'upDownArrowCallout':
-      case 'verticalScroll':
-      case 'wave':
-      case 'wedgeEllipseCallout':
-      case 'wedgeRectCallout':
-      case 'wedgeRoundRectCallout':
-      case 'rect':
-        html += `<rect x="0" y="0" width="${w}" height=${h} fill="${fillColor}" stroke="${borderColor}" stroke-width="${borderWidth}" stroke-dasharray="${strokeDasharray}" />`
-        break
-      case 'ellipse':
-        html += `<ellipse cx="${(w / 2)}" cy="${(h / 2)}" rx="${(w / 2)}" ry="${(h / 2)}" fill="${fillColor}" stroke="${borderColor}" stroke-width="${borderWidth}" stroke-dasharray="${strokeDasharray}" />`
-        break
-      case 'roundRect':
-        html += `<rect x="0" y="0" width="${w}" height="${h}" rx="7" ry="7" fill="${fillColor}" stroke="${borderColor}" stroke-width="${borderWidth}" stroke-dasharray="${strokeDasharray}" />`
-        break
-      case 'bentConnector2':
-        const d = isFlipV ? `M 0 ${w} L ${h} ${w} L ${h} 0` : `M ${w} 0 L ${w} ${h} L 0 ${h}`
-        html += `<path d="${d}" stroke="${borderColor}" stroke-width="${borderWidth}" stroke-dasharray="${strokeDasharray}" fill="none"`
-
-        if (headEndNodeAttrs && (headEndNodeAttrs['type'] === 'triangle' || headEndNodeAttrs['type'] === 'arrow')) html += `marker-start="url(#markerTriangle)"`
-        if (tailEndNodeAttrs && (tailEndNodeAttrs['type'] === 'triangle' || tailEndNodeAttrs['type'] === 'arrow')) html += `marker-end="url(#markerTriangle)"`
-        html += '/>'
-        break
-      case 'line':
-      case 'straightConnector1':
-      case 'bentConnector3':
-      case 'bentConnector4':
-      case 'bentConnector5':
-      case 'curvedConnector2':
-      case 'curvedConnector3':
-      case 'curvedConnector4':
-      case 'curvedConnector5':
-        if (isFlipV) {
-          html += "<line x1='" + w + "' y1='0' x2='0' y2='" + h + "' stroke='" + borderColor + "' stroke-width='" + borderWidth + "' stroke-dasharray='" + strokeDasharray + "' "
-        } 
-        else {
-          html += "<line x1='0' y1='0' x2='" + w + "' y2='" + h + "' stroke='" + borderColor + "' stroke-width='" + borderWidth + "' stroke-dasharray='" + strokeDasharray + "' "
-        }
-        if (headEndNodeAttrs && (headEndNodeAttrs['type'] === 'triangle' || headEndNodeAttrs['type'] === 'arrow')) html += `marker-start="url(#markerTriangle)"`
-        if (tailEndNodeAttrs && (tailEndNodeAttrs['type'] === 'triangle' || tailEndNodeAttrs['type'] === 'arrow')) html += `marker-end="url(#markerTriangle)"`
-        html += '/>'
-        break
-      case 'rightArrow':
-        html += `<defs><marker id="markerTriangle" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="2.5" markerHeight="2.5" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 Z" /></marker></defs>`
-        html += `<line x1="0" y1="${(h / 2)}" x2="${(w - 15)}" y2="${(h / 2)}" stroke="${borderColor}" stroke-width="${(h / 2)}" stroke-dasharray="${strokeDasharray}"`
-        html += `marker-end="url(#markerTriangle)"`
-        break
-      case 'downArrow':
-        html += `<defs><marker id="markerTriangle" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="2.5" markerHeight="2.5" orient="auto-start-reverse" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 Z" /></marker></defs>`
-        html += `<line x1="${(w / 2)}" y1="0" x2="${(w / 2)}" y2="${(h - 15)}" stroke="${borderColor}" stroke-width="${(w / 2)}" stroke-dasharray="${strokeDasharray}"`
-        html += `marker-end="url(#markerTriangle)"`
-        break
-      case 'bentArrow':
-      case 'bentUpArrow':
-      case 'stripedRightArrow':
-      case 'quadArrow':
-      case 'circularArrow':
-      case 'swooshArrow':
-      case 'leftRightArrow':
-      case 'leftRightUpArrow':
-      case 'leftUpArrow':
-      case 'leftCircularArrow':
-      case 'notchedRightArrow':
-      case 'curvedDownArrow':
-      case 'curvedLeftArrow':
-      case 'curvedRightArrow':
-      case 'curvedUpArrow':
-      case 'upDownArrow':
-      case 'upArrow':
-      case 'uturnArrow':
-      case 'leftRightCircularArrow':
-      case 'triangle':
-        break
-      default:
-    }
-
-    html += '</svg>'
-
-    const svg = html
-
-    html += `<div class="block content ${getVerticalAlign(node, slideLayoutSpNode, slideMasterSpNode, type)}" _id="${id}" _idx="${idx}" _type="${type}" _name="${name}" style="left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px; z-index: ${order};">`
 
     // TextBody
     let content = ''
     if (node['p:txBody']) content = genTextBody(node['p:txBody'], slideLayoutSpNode, slideMasterSpNode, type, warpObj)
-    html += content
-    html += '</div>'
 
     const json = {
       type: 'shape',
@@ -773,15 +368,17 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
       top,
       width,
       height,
+      cx,
+      cy,
       order,
       borderColor,
       borderWidth,
       borderType,
       fillColor,
       content,
-      svg,
+      shapType,
     }
-    return { html, json }
+    return json
   } 
   else {
     const {
@@ -790,13 +387,10 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
       borderType,
     } = getBorder(node, false)
     const fillColor = getShapeFill(node, false)
-    html += `<div class="block content ${getVerticalAlign(node, slideLayoutSpNode, slideMasterSpNode, type)}" _id="${id}" _idx="${idx}" _type="${type}" _name="${name}" style="left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px; border: ${borderWidth}px ${borderType} ${borderColor}; background-color: ${fillColor}; z-index: ${order};">`
 
     // TextBody
     let content = ''
     if (node['p:txBody']) content = genTextBody(node['p:txBody'], slideLayoutSpNode, slideMasterSpNode, type, warpObj)
-    html += content
-    html += '</div>'
 
     const json = {
       type: 'text',
@@ -811,7 +405,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
       fillColor,
       content,
     }
-    return { html, json }
+    return json
   }
 }
 
@@ -860,9 +454,7 @@ function processPicNode(node, warpObj) {
     src,
   }
 
-  const html = `<div class="block content" style="left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px; z-index: ${order};"><img src="${src}" style="width: 100%; height: 100%;" /></div>`
-
-  return { html, json }
+  return json
 }
 
 function processGraphicFrameNode(node, warpObj) {
@@ -979,15 +571,12 @@ function genTable(node, warpObj) {
   const xfrmNode = getTextByPathList(node, ['p:xfrm'])
   const { top, left } = getPosition(xfrmNode, undefined, undefined)
   const { width, height } = getSize(xfrmNode, undefined, undefined)
-  
-  let html = `<table style="left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px; z-index: ${order};">`
 
   const trNodes = tableNode['a:tr']
   
   const data = []
   if (trNodes.constructor === Array) {
     for (const trNode of trNodes) {
-      html += '<tr>'
       const tcNodes = trNode['a:tc']
       const tr = []
 
@@ -999,45 +588,31 @@ function genTable(node, warpObj) {
           const vMerge = getTextByPathList(tcNode, ['attrs', 'vMerge'])
           const hMerge = getTextByPathList(tcNode, ['attrs', 'hMerge'])
 
-          if (rowSpan) html += `<td rowspan="${parseInt(rowSpan)}">${text}</td>`
-          else if (colSpan) html += `<td colspan="${parseInt(colSpan)}">${text}</td>`
-          else if (!vMerge && !hMerge) html += `<td>${text}</td>`
-
           tr.push({ text, rowSpan, colSpan, vMerge, hMerge })
         }
       } 
       else {
         const text = genTextBody(tcNodes['a:txBody'])
-        html += `<td>${text}</td>`
-
         tr.push({ text })
       }
-      html += '</tr>'
 
       data.push(tr)
     }
   } 
   else {
-    html += '<tr>'
     const tcNodes = trNodes['a:tc']
     const tr = []
 
     if (tcNodes.constructor === Array) {
       for (const tcNode of tcNodes) {
         const text = genTextBody(tcNode['a:txBody'])
-        html += `<td>${text}</td>`
-
         tr.push({ text })
       }
     } 
     else {
       const text = genTextBody(tcNodes['a:txBody'])
-      html += `<td>${text}</td>`
-
       tr.push({ text })
     }
-    html += '</tr>'
-
     data.push(tr)
   }
 
@@ -1051,7 +626,7 @@ function genTable(node, warpObj) {
     data,
   }
 
-  return { html, json }
+  return json
 }
 
 function genChart(node, warpObj) {
@@ -1060,7 +635,6 @@ function genChart(node, warpObj) {
   const xfrmNode = getTextByPathList(node, ['p:xfrm'])
   const { top, left } = getPosition(xfrmNode, undefined, undefined)
   const { width, height } = getSize(xfrmNode, undefined, undefined)
-  const html = `<div id="chart${chartID}" class="block content" style="left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px; z-index: ${order};"></div>`
 
   const rid = node['a:graphic']['a:graphicData']['c:chart']['attrs']['r:id']
   const refName = warpObj['slideResObj'][rid]['target']
@@ -1120,8 +694,6 @@ function genChart(node, warpObj) {
     }
   }
 
-  if (chartData) chartList.push(chartData)
-
   let json = {}
   if (chartData) {
     json = {
@@ -1135,7 +707,7 @@ function genChart(node, warpObj) {
     }
   }
 
-  return { html, json }
+  return json
 }
 
 function genDiagram(node, warpObj) {
@@ -1153,9 +725,7 @@ function genDiagram(node, warpObj) {
     order,
   }
 
-  const html = `<div class="block content" style="border: 1px dotted; z-index: ${order}; left: ${left}px; top: ${top}px; width: ${width}px; height: ${height}px;">TODO: diagram</div>`
-
-  return { html, json }
+  return json
 }
 
 function getPosition(slideSpNode, slideLayoutSpNode, slideMasterSpNode) {
