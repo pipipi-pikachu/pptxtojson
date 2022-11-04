@@ -1,21 +1,19 @@
 let themeContent = null
 
 function pptx2json(file) {
-  const json = []
+  const slides = []
   const zip = new JSZip(file)
 
   const filesInfo = getContentTypes(zip)
-  const slideSize = getSlideSize(zip)
+  const size = getSlideSize(zip)
   themeContent = loadTheme(zip)
 
-  const numOfSlides = filesInfo['slides'].length
-  for (let i = 0; i < numOfSlides; i++) {
-    const filename = filesInfo['slides'][i]
-    const data = processSingleSlide(zip, filename, i, slideSize)
-    json.push(data)
+  for (const filename of filesInfo.slides) {
+    const singleSlide = processSingleSlide(zip, filename)
+    slides.push(singleSlide)
   }
 
-  return json
+  return { slides, size }
 }
 
 function readXmlFile(zip, filename) {
@@ -77,7 +75,7 @@ function loadTheme(zip) {
   return readXmlFile(zip, 'ppt/' + themeURI)
 }
 
-function processSingleSlide(zip, sldFileName, index, slideSize) {
+function processSingleSlide(zip, sldFileName) {
   // =====< Step 1 >=====
   // Read relationship filename of the slide (Get slideLayoutXX.xml)
   // @sldFileName: ppt/slides/slide1.xml
@@ -165,14 +163,10 @@ function processSingleSlide(zip, sldFileName, index, slideSize) {
     }
   }
 
-  const json = {
-    width: slideSize.width,
-    height: slideSize.height,
+  return {
     fill: bgColor,
     elements,
   }
-
-  return json
 }
 
 function indexNodes(content) {
@@ -218,28 +212,22 @@ function indexNodes(content) {
 
 function processNodesInSlide(nodeKey, nodeValue, warpObj) {
   let json
-  let ret
 
   switch (nodeKey) {
     case 'p:sp': // Shape, Text
-      ret = processSpNode(nodeValue, warpObj)
-      json = ret
+      json = processSpNode(nodeValue, warpObj)
       break
     case 'p:cxnSp': // Shape, Text (with connection)
-      ret = processCxnSpNode(nodeValue, warpObj)
-      json = ret
+      json = processCxnSpNode(nodeValue, warpObj)
       break
     case 'p:pic': // Picture
-      ret = processPicNode(nodeValue, warpObj)
-      json = ret
+      json = processPicNode(nodeValue, warpObj)
       break
     case 'p:graphicFrame': // Chart, Diagram, Table
-      ret = processGraphicFrameNode(nodeValue, warpObj)
-      json = ret
+      json = processGraphicFrameNode(nodeValue, warpObj)
       break
     case 'p:grpSp': // 群組
-      ret = processGroupSpNode(nodeValue, warpObj)
-      json = ret
+      json = processGroupSpNode(nodeValue, warpObj)
       break
     default:
   }
@@ -248,7 +236,6 @@ function processNodesInSlide(nodeKey, nodeValue, warpObj) {
 }
 
 function processGroupSpNode(node, warpObj) {
-
   const factor = 96 / 914400
 
   const xfrmNode = node['p:grpSpPr']['a:xfrm']
@@ -278,7 +265,7 @@ function processGroupSpNode(node, warpObj) {
     }
   }
 
-  const json = {
+  return {
     type: 'group',
     top: y - chy,
     left: x - chx,
@@ -287,8 +274,6 @@ function processGroupSpNode(node, warpObj) {
     order,
     elements,
   }
-
-  return json
 }
 
 function processSpNode(node, warpObj) {
@@ -346,23 +331,18 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
     getTextByPathList(slideXfrmNode, ['attrs', 'flipH']) === '1'
   ) isFlipV = true
 
+  let content = ''
+  if (node['p:txBody']) content = genTextBody(node['p:txBody'], slideLayoutSpNode, slideMasterSpNode, type, warpObj)
+
   if (shapType) {
     const ext = getTextByPathList(slideXfrmNode, ['a:ext', 'attrs'])
     const cx = parseInt(ext['cx']) * 96 / 914400
     const cy = parseInt(ext['cy']) * 96 / 914400
+    
+    const { borderColor, borderWidth, borderType } = getBorder(node, true)
+    const fillColor = getShapeFill(node, true)
 
-    const fillColor = getShapeFill(node, true)   
-    const {
-      borderColor,
-      borderWidth,
-      borderType,
-    } = getBorder(node, true)
-
-    // TextBody
-    let content = ''
-    if (node['p:txBody']) content = genTextBody(node['p:txBody'], slideLayoutSpNode, slideMasterSpNode, type, warpObj)
-
-    const json = {
+    return {
       type: 'shape',
       left,
       top,
@@ -376,36 +356,33 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
       borderType,
       fillColor,
       content,
+      isFlipV,
       shapType,
+      id,
+      name,
+      idx,
     }
-    return json
   } 
-  else {
-    const {
-      borderColor,
-      borderWidth,
-      borderType,
-    } = getBorder(node, false)
-    const fillColor = getShapeFill(node, false)
+  
+  const { borderColor, borderWidth, borderType } = getBorder(node, false)
+  const fillColor = getShapeFill(node, false)
 
-    // TextBody
-    let content = ''
-    if (node['p:txBody']) content = genTextBody(node['p:txBody'], slideLayoutSpNode, slideMasterSpNode, type, warpObj)
-
-    const json = {
-      type: 'text',
-      left,
-      top,
-      width,
-      height,
-      order,
-      borderColor,
-      borderWidth,
-      borderType,
-      fillColor,
-      content,
-    }
-    return json
+  return {
+    type: 'text',
+    left,
+    top,
+    width,
+    height,
+    order,
+    borderColor,
+    borderWidth,
+    borderType,
+    fillColor,
+    isFlipV,
+    content,
+    id,
+    name,
+    idx,
   }
 }
 
@@ -444,7 +421,7 @@ function processPicNode(node, warpObj) {
   const { width, height } = getSize(xfrmNode, undefined, undefined)
   const src = `data:${mimeType};base64,${base64ArrayBuffer(imgArrayBuffer)}`
 
-  const json = {
+  return {
     type: 'image',
     top,
     left,
@@ -453,8 +430,6 @@ function processPicNode(node, warpObj) {
     order,
     src,
   }
-
-  return json
 }
 
 function processGraphicFrameNode(node, warpObj) {
@@ -477,11 +452,10 @@ function processGraphicFrameNode(node, warpObj) {
 }
 
 function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, warpObj) {
+  if (!textBodyNode) return ''
 
   let text = ''
   const slideMasterTextStyles = warpObj['slideMasterTextStyles']
-
-  if (!textBodyNode) return text
 
   if (textBodyNode['a:p'].constructor === Array) {
     for (const pNode of textBodyNode['a:p']) {
@@ -616,7 +590,7 @@ function genTable(node, warpObj) {
     data.push(tr)
   }
 
-  const json = {
+  return {
     type: 'table',
     top,
     left,
@@ -625,12 +599,9 @@ function genTable(node, warpObj) {
     order,
     data,
   }
-
-  return json
 }
 
 function genChart(node, warpObj) {
-  const chartID = '' + Math.floor(Math.random() * 10000000)
   const order = node['attrs']['order']
   const xfrmNode = getTextByPathList(node, ['p:xfrm'])
   const { top, left } = getPosition(xfrmNode, undefined, undefined)
@@ -641,49 +612,43 @@ function genChart(node, warpObj) {
   const content = readXmlFile(warpObj['zip'], refName)
   const plotArea = getTextByPathList(content, ['c:chartSpace', 'c:chart', 'c:plotArea'])
 
-  let chartData = null
+  let chart = null
   for (const key in plotArea) {
     switch (key) {
       case 'c:lineChart':
-        chartData = {
-          chartID: 'chart' + chartID,
-          chartType: 'lineChart',
-          chartData: extractChartData(plotArea[key]['c:ser']),
+        chart = {
+          type: 'lineChart',
+          data: extractChartData(plotArea[key]['c:ser']),
         }
         break
       case 'c:barChart':
-        chartData = {
-          chartID: 'chart' + chartID,
-          chartType: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']) === 'stacked' ? 'stackedBarChart' : 'barChart',
-          chartData: extractChartData(plotArea[key]['c:ser']),
+        chart = {
+          type: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']) === 'stacked' ? 'stackedBarChart' : 'barChart',
+          data: extractChartData(plotArea[key]['c:ser']),
         }
         break
       case 'c:pieChart':
-        chartData = {
-          chartID: 'chart' + chartID,
-          chartType: 'pieChart',
-          chartData: extractChartData(plotArea[key]['c:ser']),
+        chart = {
+          type: 'pieChart',
+          data: extractChartData(plotArea[key]['c:ser']),
         }
         break
       case 'c:pie3DChart':
-        chartData = {
-          chartID: 'chart' + chartID,
-          chartType: 'pie3DChart',
-          chartData: extractChartData(plotArea[key]['c:ser']),
+        chart = {
+          type: 'pie3DChart',
+          data: extractChartData(plotArea[key]['c:ser']),
         }
         break
       case 'c:areaChart':
-        chartData = {
-          chartID: 'chart' + chartID,
-          chartType: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']) === 'percentStacked' ? 'stackedAreaChart' : 'areaChart',
-          chartData: extractChartData(plotArea[key]['c:ser']),
+        chart = {
+          type: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']) === 'percentStacked' ? 'stackedAreaChart' : 'areaChart',
+          data: extractChartData(plotArea[key]['c:ser']),
         }
         break
       case 'c:scatterChart':
-        chartData = {
-          chartID: 'chart' + chartID,
-          chartType: 'scatterChart',
-          chartData: extractChartData(plotArea[key]['c:ser']),
+        chart = {
+          type: 'scatterChart',
+          data: extractChartData(plotArea[key]['c:ser']),
         }
         break
       case 'c:catAx':
@@ -694,20 +659,17 @@ function genChart(node, warpObj) {
     }
   }
 
-  let json = {}
-  if (chartData) {
-    json = {
-      type: 'chart',
-      top,
-      left,
-      width,
-      height,
-      order,
-      data: chartData.chartData,
-    }
+  if (!chart) return {}
+  return {
+    type: 'chart',
+    top,
+    left,
+    width,
+    height,
+    order,
+    data: chart.data,
+    chartType: chart.type,
   }
-
-  return json
 }
 
 function genDiagram(node, warpObj) {
@@ -716,7 +678,7 @@ function genDiagram(node, warpObj) {
   const { left, top } = getPosition(xfrmNode, undefined, undefined)
   const { width, height } = getSize(xfrmNode, undefined, undefined)
 
-  const json = {
+  return {
     type: 'diagram',
     left,
     top,
@@ -724,8 +686,6 @@ function genDiagram(node, warpObj) {
     height,
     order,
   }
-
-  return json
 }
 
 function getPosition(slideSpNode, slideLayoutSpNode, slideMasterSpNode) {
