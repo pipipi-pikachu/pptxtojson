@@ -5,11 +5,11 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>pptx2json</title>
-	<script type="text/javascript" src="src/jszip.min.js"></script>
-	<script type="text/javascript" src="src/tinycolor.js"></script>
-	<script type="text/javascript" src="src/tXml.min.js"></script>
+	<script src="node_modules/jszip/dist/jszip.js"></script>
+	<script src="node_modules/tinycolor2/tinycolor.js"></script>
+	<script src="node_modules/txml/dist/txml.min.js"></script>
 	
-	<script type="text/javascript" src="src/pptx2json.js"></script>
+	<script src="src/pptx2json.js"></script>
 </head>
 
 <body>
@@ -20,8 +20,8 @@
 			const fileName = evt.target.files[0]
 			
 			const reader = new FileReader()
-			reader.onload = e => {
-				const json = pptx2json(e.target.result)
+			reader.onload = async e => {
+				const json = await pptx2json(e.target.result)
 				console.log(json)
 			}
 			reader.readAsArrayBuffer(fileName)
