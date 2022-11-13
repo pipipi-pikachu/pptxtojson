@@ -1,6 +1,10 @@
+import JSZip from 'jszip'
+import * as txml from 'txml/dist/txml.mjs'
+import tinycolor from 'tinycolor2'
+
 let themeContent = null
 
-async function pptx2json(file) {
+export async function parse(file) {
   const slides = []
   
   const zip = await JSZip.loadAsync(file)
@@ -21,7 +25,7 @@ function simplifyLostLess(children, parentAttributes = {}) {
   const out = {}
   if (!children.length) return out
 
-  if (children.length === 1 && typeof children[0] == 'string') {
+  if (children.length === 1 && typeof children[0] === 'string') {
     return Object.keys(parentAttributes).length ? {
       attrs: parentAttributes,
       value: children[0],
@@ -272,7 +276,7 @@ async function processGroupSpNode(node, warpObj) {
   const elements = []
   for (const nodeKey in node) {
     if (node[nodeKey].constructor === Array) {
-      for (const item of  node[nodeKey]) {
+      for (const item of node[nodeKey]) {
         const ret = await processNodesInSlide(nodeKey, item, warpObj)
         if (ret) elements.push(ret)
       }
@@ -311,7 +315,7 @@ function processSpNode(node, warpObj) {
       slideMasterSpNode = warpObj['slideMasterTables']['typeTable'][type]
     }
   }
-  else if(idx) {
+  else if (idx) {
     slideLayoutSpNode = warpObj['slideLayoutTables']['idxTable'][idx]
     slideMasterSpNode = warpObj['slideMasterTables']['idxTable'][idx]
   }
@@ -505,8 +509,8 @@ function genBuChar(node) {
   if (buChar) {
     const buFontAttrs = getTextByPathList(pPrNode, ['a:buFont', 'attrs'])
 
+    let marginLeft = parseInt(getTextByPathList(pPrNode, ['attrs', 'marL'])) * 96 / 914400
     if (buFontAttrs) {
-      let marginLeft = parseInt(getTextByPathList(pPrNode, ['attrs', 'marL'])) * 96 / 914400
       let marginRight = parseInt(buFontAttrs['pitchFamily'])
 
       if (isNaN(marginLeft)) marginLeft = 328600 * 96 / 914400
@@ -516,10 +520,8 @@ function genBuChar(node) {
 
       return `<span style="font-family: ${typeface}; margin-left: ${marginLeft * lvl}px; margin-right: ${marginRight}px; font-size: 20pt;">${buChar}</span>`
     } 
-    else {
-      marginLeft = 328600 * 96 / 914400 * lvl
-      return `<span style="margin-left: ${marginLeft}px;">${buChar}</span>`
-    }
+    marginLeft = 328600 * 96 / 914400 * lvl
+    return `<span style="margin-left: ${marginLeft}px;">${buChar}</span>`
   }
   return `<span style="margin-left: ${328600 * 96 / 914400 * lvl}px; margin-right: 0;"></span>`
 }
@@ -532,13 +534,13 @@ function genSpanElement(node, slideLayoutSpNode, slideMasterSpNode, type, warpOb
   if (typeof text !== 'string') text = '&nbsp;'
 
   const styleText = `
-    color: ${getFontColor(node, type, slideMasterTextStyles)};
-    font-size: ${getFontSize(node, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles)};
-    font-family: ${getFontType(node, type, slideMasterTextStyles)};
-    font-weight: ${getFontBold(node, type, slideMasterTextStyles)};
-    font-style: ${getFontItalic(node, type, slideMasterTextStyles)};
-    text-decoration: ${getFontDecoration(node, type, slideMasterTextStyles)};
-    vertical-align: ${getTextVerticalAlign(node, type, slideMasterTextStyles)};
+    color: ${getFontColor(node)};
+    font-size: ${getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles)};
+    font-family: ${getFontType(node, type)};
+    font-weight: ${getFontBold(node)};
+    font-style: ${getFontItalic(node)};
+    text-decoration: ${getFontDecoration(node)};
+    vertical-align: ${getTextVerticalAlign(node)};
   `
 
   const linkID = getTextByPathList(node, ['a:rPr', 'a:hlinkClick', 'attrs', 'r:id'])
@@ -678,7 +680,7 @@ async function genChart(node, warpObj) {
   }
 }
 
-function genDiagram(node, warpObj) {
+function genDiagram(node) {
   const xfrmNode = getTextByPathList(node, ['p:xfrm'])
   const { left, top } = getPosition(xfrmNode, undefined, undefined)
   const { width, height } = getSize(xfrmNode, undefined, undefined)
@@ -739,31 +741,22 @@ function getHorizontalAlign(node, slideLayoutSpNode, slideMasterSpNode, type, sl
     }
   }
   if (!algn) {
-    if (type == 'title' || type == 'subTitle' || type == 'ctrTitle') return 'h-mid'
-    else if (type == 'sldNum') return 'h-right'
+    if (type === 'title' || type === 'subTitle' || type === 'ctrTitle') return 'h-mid'
+    else if (type === 'sldNum') return 'h-right'
   }
   return algn === 'ctr' ? 'h-mid' : algn === 'r' ? 'h-right' : 'h-left'
 }
 
-function getVerticalAlign(node, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles) {
-  let anchor = getTextByPathList(node, ['p:txBody', 'a:bodyPr', 'attrs', 'anchor'])
-
-  if (!anchor) anchor = getTextByPathList(slideLayoutSpNode, ['p:txBody', 'a:bodyPr', 'attrs', 'anchor'])
-  if (!anchor) anchor = getTextByPathList(slideMasterSpNode, ['p:txBody', 'a:bodyPr', 'attrs', 'anchor'])
-
-  return anchor === 'ctr' ? 'v-mid' : anchor === 'b' ? 'v-down' : 'v-up'
-}
-
-function getFontType(node, type, slideMasterTextStyles) {
+function getFontType(node, type) {
   let typeface = getTextByPathList(node, ['a:rPr', 'a:latin', 'attrs', 'typeface'])
 
   if (!typeface) {
     const fontSchemeNode = getTextByPathList(themeContent, ['a:theme', 'a:themeElements', 'a:fontScheme'])
 
-    if (type == 'title' || type == 'subTitle' || type == 'ctrTitle') {
+    if (type === 'title' || type === 'subTitle' || type === 'ctrTitle') {
       typeface = getTextByPathList(fontSchemeNode, ['a:majorFont', 'a:latin', 'attrs', 'typeface'])
     } 
-    else if (type == 'body') {
+    else if (type === 'body') {
       typeface = getTextByPathList(fontSchemeNode, ['a:minorFont', 'a:latin', 'attrs', 'typeface'])
     } 
     else {
@@ -774,12 +767,12 @@ function getFontType(node, type, slideMasterTextStyles) {
   return typeface || 'inherit'
 }
 
-function getFontColor(node, type, slideMasterTextStyles) {
+function getFontColor(node) {
   const color = getTextByPathList(node, ['a:rPr', 'a:solidFill', 'a:srgbClr', 'attrs', 'val'])
   return color ? `#${color}` : '#000'
 }
 
-function getFontSize(node, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles) {
+function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles) {
   let fontSize
 
   if (node['a:rPr']) fontSize = parseInt(node['a:rPr']['attrs']['sz']) / 100
@@ -812,19 +805,19 @@ function getFontSize(node, slideLayoutSpNode, slideMasterSpNode, type, slideMast
   return (isNaN(fontSize) || !fontSize) ? 'inherit' : (fontSize + 'pt')
 }
 
-function getFontBold(node, type, slideMasterTextStyles) {
+function getFontBold(node) {
   return (node['a:rPr'] && node['a:rPr']['attrs']['b'] === '1') ? 'bold' : 'initial'
 }
 
-function getFontItalic(node, type, slideMasterTextStyles) {
+function getFontItalic(node) {
   return (node['a:rPr'] && node['a:rPr']['attrs']['i'] === '1') ? 'italic' : 'normal'
 }
 
-function getFontDecoration(node, type, slideMasterTextStyles) {
+function getFontDecoration(node) {
   return (node['a:rPr'] && node['a:rPr']['attrs']['u'] === 'sng') ? 'underline' : 'initial'
 }
 
-function getTextVerticalAlign(node, type, slideMasterTextStyles) {
+function getTextVerticalAlign(node) {
   const baseline = getTextByPathList(node, ['a:rPr', 'attrs', 'baseline'])
   return baseline ? (parseInt(baseline) / 1000) + '%' : 'baseline'
 }
@@ -974,10 +967,9 @@ function getShapeFill(node, isSvgMode) {
 
     return fillColor
   } 
-  else {
-    if (isSvgMode) return 'none'
-    return fillColor
-  }
+
+  if (isSvgMode) return 'none'
+  return fillColor
 }
 
 function getSolidFill(solidFill) {
@@ -1010,6 +1002,8 @@ function getSchemeColorFromTheme(schemeClr) {
     case 'a:bg2':
       schemeClr = 'a:lt2'
       break
+    default: 
+      break
   }
   const refNode = getTextByPathList(themeContent, ['a:theme', 'a:themeElements', 'a:clrScheme', schemeClr])
   let color = getTextByPathList(refNode, ['a:srgbClr', 'attrs', 'val'])
@@ -1023,39 +1017,39 @@ function extractChartData(serNode) {
 
   if (serNode['c:xVal']) {
     let dataRow = []
-    eachElement(serNode['c:xVal']['c:numRef']['c:numCache']['c:pt'], function (innerNode, index) {
+    eachElement(serNode['c:xVal']['c:numRef']['c:numCache']['c:pt'], innerNode => {
       dataRow.push(parseFloat(innerNode['c:v']))
       return ''
     })
     dataMat.push(dataRow)
     dataRow = []
-    eachElement(serNode['c:yVal']['c:numRef']['c:numCache']['c:pt'], function (innerNode, index) {
+    eachElement(serNode['c:yVal']['c:numRef']['c:numCache']['c:pt'], innerNode => {
       dataRow.push(parseFloat(innerNode['c:v']))
       return ''
     })
     dataMat.push(dataRow)
   } 
   else {
-    eachElement(serNode, function (innerNode, index) {
+    eachElement(serNode, (innerNode, index) => {
       const dataRow = []
       const colName = getTextByPathList(innerNode, ['c:tx', 'c:strRef', 'c:strCache', 'c:pt', 'c:v']) || index
 
       const rowNames = {}
       if (getTextByPathList(innerNode, ['c:cat', 'c:strRef', 'c:strCache', 'c:pt'])) {
-        eachElement(innerNode['c:cat']['c:strRef']['c:strCache']['c:pt'], function (innerNode, index) {
+        eachElement(innerNode['c:cat']['c:strRef']['c:strCache']['c:pt'], innerNode => {
           rowNames[innerNode['attrs']['idx']] = innerNode['c:v']
           return ''
         })
       } 
       else if (getTextByPathList(innerNode, ['c:cat', 'c:numRef', 'c:numCache', 'c:pt'])) {
-        eachElement(innerNode['c:cat']['c:numRef']['c:numCache']['c:pt'], function (innerNode, index) {
+        eachElement(innerNode['c:cat']['c:numRef']['c:numCache']['c:pt'], innerNode => {
           rowNames[innerNode['attrs']['idx']] = innerNode['c:v']
           return ''
         })
       }
 
       if (getTextByPathList(innerNode, ['c:val', 'c:numRef', 'c:numCache', 'c:pt'])) {
-        eachElement(innerNode['c:val']['c:numRef']['c:numCache']['c:pt'], function (innerNode, index) {
+        eachElement(innerNode['c:val']['c:numRef']['c:numCache']['c:pt'], innerNode => {
           dataRow.push({
             x: innerNode['attrs']['idx'],
             y: parseFloat(innerNode['c:v']),
@@ -1110,42 +1104,42 @@ function applyLumModify(rgbStr, factor, offset) {
 }
 
 function base64ArrayBuffer(arrayBuffer) {
-	let base64 = ''
-	const encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-	const bytes = new Uint8Array(arrayBuffer)
-	const byteLength = bytes.byteLength
-	const byteRemainder = byteLength % 3
-	const mainLength = byteLength - byteRemainder
+  let base64 = ''
+  const encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  const bytes = new Uint8Array(arrayBuffer)
+  const byteLength = bytes.byteLength
+  const byteRemainder = byteLength % 3
+  const mainLength = byteLength - byteRemainder
 
-	let a, b, c, d
-	let chunk
+  let a, b, c, d
+  let chunk
 
-	for (let i = 0; i < mainLength; i = i + 3) {
-		chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2]
-		a = (chunk & 16515072) >> 18
-		b = (chunk & 258048) >> 12
-		c = (chunk & 4032) >>  6
-		d = chunk & 63
-		base64 += encodings[a] + encodings[b] + encodings[c] + encodings[d]
-	}
+  for (let i = 0; i < mainLength; i = i + 3) {
+    chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2]
+    a = (chunk & 16515072) >> 18
+    b = (chunk & 258048) >> 12
+    c = (chunk & 4032) >> 6
+    d = chunk & 63
+    base64 += encodings[a] + encodings[b] + encodings[c] + encodings[d]
+  }
 
-	if (byteRemainder == 1) {
-		chunk = bytes[mainLength]
-		a = (chunk & 252) >> 2
-		b = (chunk & 3) << 4
-		base64 += encodings[a] + encodings[b] + '=='
-	} 
-  else if (byteRemainder == 2) {
-		chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1]
-		a = (chunk & 64512) >> 10
-		b = (chunk & 1008) >> 4
-		c = (chunk & 15) << 2
-		base64 += encodings[a] + encodings[b] + encodings[c] + '='
-	}
+  if (byteRemainder === 1) {
+    chunk = bytes[mainLength]
+    a = (chunk & 252) >> 2
+    b = (chunk & 3) << 4
+    base64 += encodings[a] + encodings[b] + '=='
+  } 
+  else if (byteRemainder === 2) {
+    chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1]
+    a = (chunk & 64512) >> 10
+    b = (chunk & 1008) >> 4
+    c = (chunk & 15) << 2
+    base64 += encodings[a] + encodings[b] + encodings[c] + '='
+  }
 
-	return base64
+  return base64
 }
 
 function extractFileExtension(filename) {
-	return filename.substr((~-filename.lastIndexOf('.') >>> 0) + 2)
+  return filename.substr((~-filename.lastIndexOf('.') >>> 0) + 2)
 }
