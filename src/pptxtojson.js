@@ -2,6 +2,10 @@ import JSZip from 'jszip'
 import * as txml from 'txml/dist/txml.mjs'
 import tinycolor from 'tinycolor2'
 
+import { extractFileExtension, base64ArrayBuffer, eachElement, getTextByPathList, angleToDegrees } from './utils'
+
+const FACTOR = 96 / 914400
+
 let themeContent = null
 
 export async function parse(file) {
@@ -83,8 +87,8 @@ async function getSlideSize(zip) {
   const content = await readXmlFile(zip, 'ppt/presentation.xml')
   const sldSzAttrs = content['p:presentation']['p:sldSz']['attrs']
   return {
-    width: parseInt(sldSzAttrs['cx']) * 96 / 914400,
-    height: parseInt(sldSzAttrs['cy']) * 96 / 914400,
+    width: parseInt(sldSzAttrs['cx']) * FACTOR,
+    height: parseInt(sldSzAttrs['cy']) * FACTOR,
   }
 }
 
@@ -113,49 +117,49 @@ async function loadTheme(zip) {
 async function processSingleSlide(zip, sldFileName) {
   const resName = sldFileName.replace('slides/slide', 'slides/_rels/slide') + '.rels'
   const resContent = await readXmlFile(zip, resName)
-  let RelationshipArray = resContent['Relationships']['Relationship']
+  let relationshipArray = resContent['Relationships']['Relationship']
   let layoutFilename = ''
   const slideResObj = {}
 
-  if (RelationshipArray.constructor === Array) {
-    for (const RelationshipArrayItem of RelationshipArray) {
-      switch (RelationshipArrayItem['attrs']['Type']) {
+  if (relationshipArray.constructor === Array) {
+    for (const relationshipArrayItem of relationshipArray) {
+      switch (relationshipArrayItem['attrs']['Type']) {
         case 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout':
-          layoutFilename = RelationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
+          layoutFilename = relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
           break
         case 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide':
         case 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image':
         case 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart':
         case 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink':
         default:
-          slideResObj[RelationshipArrayItem['attrs']['Id']] = {
-            type: RelationshipArrayItem['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
-            target: RelationshipArrayItem['attrs']['Target'].replace('../', 'ppt/'),
+          slideResObj[relationshipArrayItem['attrs']['Id']] = {
+            type: relationshipArrayItem['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
+            target: relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/'),
           }
       }
     }
   } 
-  else layoutFilename = RelationshipArray['attrs']['Target'].replace('../', 'ppt/')
+  else layoutFilename = relationshipArray['attrs']['Target'].replace('../', 'ppt/')
 
   const slideLayoutContent = await readXmlFile(zip, layoutFilename)
   const slideLayoutTables = await indexNodes(slideLayoutContent)
 
   const slideLayoutResFilename = layoutFilename.replace('slideLayouts/slideLayout', 'slideLayouts/_rels/slideLayout') + '.rels'
   const slideLayoutResContent = await readXmlFile(zip, slideLayoutResFilename)
-  RelationshipArray = slideLayoutResContent['Relationships']['Relationship']
+  relationshipArray = slideLayoutResContent['Relationships']['Relationship']
 
   let masterFilename = ''
-  if (RelationshipArray.constructor === Array) {
-    for (const RelationshipArrayItem of RelationshipArray) {
-      switch (RelationshipArrayItem['attrs']['Type']) {
+  if (relationshipArray.constructor === Array) {
+    for (const relationshipArrayItem of relationshipArray) {
+      switch (relationshipArrayItem['attrs']['Type']) {
         case 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideMaster':
-          masterFilename = RelationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
+          masterFilename = relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
           break
         default:
       }
     }
   } 
-  else masterFilename = RelationshipArray['attrs']['Target'].replace('../', 'ppt/')
+  else masterFilename = relationshipArray['attrs']['Target'].replace('../', 'ppt/')
 
   const slideMasterContent = await readXmlFile(zip, masterFilename)
   const slideMasterTextStyles = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:txStyles'])
@@ -250,7 +254,7 @@ async function processNodesInSlide(nodeKey, nodeValue, warpObj) {
     case 'p:graphicFrame': // Chart, Diagram, Table
       json = await processGraphicFrameNode(nodeValue, warpObj)
       break
-    case 'p:grpSp': // 群組
+    case 'p:grpSp':
       json = await processGroupSpNode(nodeValue, warpObj)
       break
     default:
@@ -260,19 +264,16 @@ async function processNodesInSlide(nodeKey, nodeValue, warpObj) {
 }
 
 async function processGroupSpNode(node, warpObj) {
-  const factor = 96 / 914400
-
   const xfrmNode = node['p:grpSpPr']['a:xfrm']
-  const x = parseInt(xfrmNode['a:off']['attrs']['x']) * factor
-  const y = parseInt(xfrmNode['a:off']['attrs']['y']) * factor
-  const chx = parseInt(xfrmNode['a:chOff']['attrs']['x']) * factor
-  const chy = parseInt(xfrmNode['a:chOff']['attrs']['y']) * factor
-  const cx = parseInt(xfrmNode['a:ext']['attrs']['cx']) * factor
-  const cy = parseInt(xfrmNode['a:ext']['attrs']['cy']) * factor
-  const chcx = parseInt(xfrmNode['a:chExt']['attrs']['cx']) * factor
-  const chcy = parseInt(xfrmNode['a:chExt']['attrs']['cy']) * factor
+  const x = parseInt(xfrmNode['a:off']['attrs']['x']) * FACTOR
+  const y = parseInt(xfrmNode['a:off']['attrs']['y']) * FACTOR
+  const chx = parseInt(xfrmNode['a:chOff']['attrs']['x']) * FACTOR
+  const chy = parseInt(xfrmNode['a:chOff']['attrs']['y']) * FACTOR
+  const cx = parseInt(xfrmNode['a:ext']['attrs']['cx']) * FACTOR
+  const cy = parseInt(xfrmNode['a:ext']['attrs']['cy']) * FACTOR
+  const chcx = parseInt(xfrmNode['a:chExt']['attrs']['cx']) * FACTOR
+  const chcy = parseInt(xfrmNode['a:chExt']['attrs']['cy']) * FACTOR
 
-  // Procsee all child nodes
   const elements = []
   for (const nodeKey in node) {
     if (node[nodeKey].constructor === Array) {
@@ -345,18 +346,31 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
   const { width, height } = getSize(slideXfrmNode, slideLayoutXfrmNode, slideMasterXfrmNode)
 
   let isFlipV = false
-  if (
-    getTextByPathList(slideXfrmNode, ['attrs', 'flipV']) === '1' || 
-    getTextByPathList(slideXfrmNode, ['attrs', 'flipH']) === '1'
-  ) isFlipV = true
+  let isFlipH = false
+  if (getTextByPathList(slideXfrmNode, ['attrs', 'flipV']) === '1') {
+    isFlipV = true
+  }
+  if (getTextByPathList(slideXfrmNode, ['attrs', 'flipH']) === '1') {
+    isFlipH = true
+  }
+
+  const rotate = angleToDegrees(getTextByPathList(slideXfrmNode, ['attrs', 'rot']))
+
+  const txtXframeNode = getTextByPathList(node, ['p:txXfrm'])
+  let txtRotate
+  if (txtXframeNode) {
+    const txtXframeRot = getTextByPathList(txtXframeNode, ['attrs', 'rot'])
+    if (txtXframeRot) txtRotate = angleToDegrees(txtXframeRot) + 90
+  } 
+  else txtRotate = rotate
 
   let content = ''
   if (node['p:txBody']) content = genTextBody(node['p:txBody'], slideLayoutSpNode, slideMasterSpNode, type, warpObj)
 
   if (shapType) {
     const ext = getTextByPathList(slideXfrmNode, ['a:ext', 'attrs'])
-    const cx = parseInt(ext['cx']) * 96 / 914400
-    const cy = parseInt(ext['cy']) * 96 / 914400
+    const cx = parseInt(ext['cx']) * FACTOR
+    const cy = parseInt(ext['cy']) * FACTOR
     
     const { borderColor, borderWidth, borderType } = getBorder(node, true)
     const fillColor = getShapeFill(node, true)
@@ -375,6 +389,8 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
       fillColor,
       content,
       isFlipV,
+      isFlipH,
+      rotate,
       shapType,
       id,
       name,
@@ -396,6 +412,8 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
     borderType,
     fillColor,
     isFlipV,
+    isFlipH,
+    rotate: txtRotate,
     content,
     id,
     name,
@@ -436,6 +454,10 @@ async function processPicNode(node, warpObj) {
   const { width, height } = getSize(xfrmNode, undefined, undefined)
   const src = `data:${mimeType};base64,${base64ArrayBuffer(imgArrayBuffer)}`
 
+  let rotate = 0
+  const rotateNode = getTextByPathList(node, ['p:spPr', 'a:xfrm', 'attrs', 'rot'])
+  if (rotateNode) rotate = angleToDegrees(rotateNode)
+
   return {
     type: 'image',
     top,
@@ -443,6 +465,7 @@ async function processPicNode(node, warpObj) {
     width, 
     height,
     src,
+    rotate,
   }
 }
 
@@ -476,11 +499,11 @@ function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, w
       const rNode = pNode['a:r']
       text += `<div class="${getHorizontalAlign(pNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles)}">`
       text += genBuChar(pNode)
-      if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, slideMasterSpNode, type, warpObj)
+      if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj)
       else if (rNode.constructor === Array) {
-        for (const rNodeItem of rNode) text += genSpanElement(rNodeItem, slideLayoutSpNode, slideMasterSpNode, type, warpObj)
+        for (const rNodeItem of rNode) text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj)
       } 
-      else text += genSpanElement(rNode, slideLayoutSpNode, slideMasterSpNode, type, warpObj)
+      else text += genSpanElement(rNode, slideLayoutSpNode, type, warpObj)
       text += '</div>'
     }
   } 
@@ -489,11 +512,11 @@ function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, w
     const rNode = pNode['a:r']
     text += `<div class="${getHorizontalAlign(pNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles)}">`
     text += genBuChar(pNode)
-    if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, slideMasterSpNode, type, warpObj)
+    if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj)
     else if (rNode.constructor === Array) {
-      for (const rNodeItem of rNode) text += genSpanElement(rNodeItem, slideLayoutSpNode, slideMasterSpNode, type, warpObj)
+      for (const rNodeItem of rNode) text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj)
     } 
-    else text += genSpanElement(rNode, slideLayoutSpNode, slideMasterSpNode, type, warpObj)
+    else text += genSpanElement(rNode, slideLayoutSpNode, type, warpObj)
     text += '</div>'
   }
   return text
@@ -509,24 +532,24 @@ function genBuChar(node) {
   if (buChar) {
     const buFontAttrs = getTextByPathList(pPrNode, ['a:buFont', 'attrs'])
 
-    let marginLeft = parseInt(getTextByPathList(pPrNode, ['attrs', 'marL'])) * 96 / 914400
+    let marginLeft = parseInt(getTextByPathList(pPrNode, ['attrs', 'marL'])) * FACTOR
     if (buFontAttrs) {
       let marginRight = parseInt(buFontAttrs['pitchFamily'])
 
-      if (isNaN(marginLeft)) marginLeft = 328600 * 96 / 914400
+      if (isNaN(marginLeft)) marginLeft = 328600 * FACTOR
       if (isNaN(marginRight)) marginRight = 0
 
       const typeface = buFontAttrs['typeface']
 
       return `<span style="font-family: ${typeface}; margin-left: ${marginLeft * lvl}px; margin-right: ${marginRight}px; font-size: 20pt;">${buChar}</span>`
     } 
-    marginLeft = 328600 * 96 / 914400 * lvl
+    marginLeft = 328600 * FACTOR * lvl
     return `<span style="margin-left: ${marginLeft}px;">${buChar}</span>`
   }
-  return `<span style="margin-left: ${328600 * 96 / 914400 * lvl}px; margin-right: 0;"></span>`
+  return `<span style="margin-left: ${328600 * FACTOR * lvl}px; margin-right: 0;"></span>`
 }
 
-function genSpanElement(node, slideLayoutSpNode, slideMasterSpNode, type, warpObj) {
+function genSpanElement(node, slideLayoutSpNode, type, warpObj) {
   const slideMasterTextStyles = warpObj['slideMasterTextStyles']
 
   let text = node['a:t']
@@ -704,8 +727,8 @@ function getPosition(slideSpNode, slideLayoutSpNode, slideMasterSpNode) {
   if (!off) return { top: 0, left: 0 }
 
   return {
-    top: parseInt(off['y']) * 96 / 914400,
-    left: parseInt(off['x']) * 96 / 914400,
+    top: parseInt(off['y']) * FACTOR,
+    left: parseInt(off['x']) * FACTOR,
   }
 }
 
@@ -719,8 +742,8 @@ function getSize(slideSpNode, slideLayoutSpNode, slideMasterSpNode) {
   if (!ext) return { width: 0, height: 0 }
 
   return {
-    width: parseInt(ext['cx']) * 96 / 914400,
-    height: parseInt(ext['cy']) * 96 / 914400,
+    width: parseInt(ext['cx']) * FACTOR,
+    height: parseInt(ext['cy']) * FACTOR,
   }
 }
 
@@ -823,14 +846,11 @@ function getTextVerticalAlign(node) {
 }
 
 function getBorder(node, isSvgMode) {
-  // 1. presentationML
   const lineNode = node['p:spPr']['a:ln']
 
-  // Border width: 1pt = 12700, default = 0.75pt
   let borderWidth = parseInt(getTextByPathList(lineNode, ['attrs', 'w'])) / 12700
   if (isNaN(borderWidth)) borderWidth = 0
 
-  // Border color
   let borderColor = getTextByPathList(lineNode, ['a:solidFill', 'a:srgbClr', 'attrs', 'val'])
   if (!borderColor) {
     const schemeClrNode = getTextByPathList(lineNode, ['a:solidFill', 'a:schemeClr'])
@@ -838,7 +858,6 @@ function getBorder(node, isSvgMode) {
     borderColor = getSchemeColorFromTheme(schemeClr)
   }
 
-  // 2. drawingML namespace
   if (!borderColor) {
     const schemeClrNode = getTextByPathList(node, ['p:style', 'a:lnRef', 'a:schemeClr'])
     const schemeClr = 'a:' + getTextByPathList(schemeClrNode, ['attrs', 'val'])
@@ -864,7 +883,6 @@ function getBorder(node, isSvgMode) {
     borderColor = `#${borderColor}`
   }
 
-  // Border type
   const type = getTextByPathList(lineNode, ['a:prstDash', 'attrs', 'val'])
   let borderType = 'solid'
   let strokeDasharray = '0'
@@ -929,10 +947,6 @@ function getSlideBackgroundFill(slideContent, slideLayoutContent, slideMasterCon
 }
 
 function getShapeFill(node, isSvgMode) {
-
-  // 1. presentationML
-  // p:spPr [a:noFill, solidFill, gradFill, blipFill, pattFill, grpFill]
-  // From slide
   if (getTextByPathList(node, ['p:spPr', 'a:noFill'])) {
     return isSvgMode ? 'none' : 'background-color: initial;'
   }
@@ -942,13 +956,11 @@ function getShapeFill(node, isSvgMode) {
     fillColor = getTextByPathList(node, ['p:spPr', 'a:solidFill', 'a:srgbClr', 'attrs', 'val'])
   }
 
-  // From theme
   if (!fillColor) {
     const schemeClr = 'a:' + getTextByPathList(node, ['p:spPr', 'a:solidFill', 'a:schemeClr', 'attrs', 'val'])
     fillColor = getSchemeColorFromTheme(schemeClr)
   }
 
-  // 2. drawingML namespace
   if (!fillColor) {
     const schemeClr = 'a:' + getTextByPathList(node, ['p:style', 'a:fillRef', 'a:schemeClr', 'attrs', 'val'])
     fillColor = getSchemeColorFromTheme(schemeClr)
@@ -957,15 +969,14 @@ function getShapeFill(node, isSvgMode) {
   if (fillColor) {
     fillColor = `#${fillColor}`
 
-    // Apply shade or tint
-    // TODO: 較淺, 較深 80%
     let lumMod = parseInt(getTextByPathList(node, ['p:spPr', 'a:solidFill', 'a:schemeClr', 'a:lumMod', 'attrs', 'val'])) / 100000
     let lumOff = parseInt(getTextByPathList(node, ['p:spPr', 'a:solidFill', 'a:schemeClr', 'a:lumOff', 'attrs', 'val'])) / 100000
     if (isNaN(lumMod)) lumMod = 1.0
     if (isNaN(lumOff)) lumOff = 0
-    fillColor = applyLumModify(fillColor, lumMod, lumOff)
 
-    return fillColor
+    const color = tinycolor(fillColor).toHsl()
+    const lum = color.l * (1 + lumOff)
+    return tinycolor({ h: color.h, s: color.s, l: lum, a: color.a }).toHexString()
   } 
 
   if (isSvgMode) return 'none'
@@ -1068,78 +1079,4 @@ function extractChartData(serNode) {
   }
 
   return dataMat
-}
-
-function getTextByPathList(node, path) {
-  if (path.constructor !== Array) throw Error('Error of path type! path is not array.')
-
-  if (!node) return node
-
-  for (let i = 0; i < path.length; i++) {
-    node = node[path[i]]
-    if (!node) return node
-  }
-
-  return node
-}
-
-function eachElement(node, doFunction) {
-  if (!node) return node
-
-  let result = ''
-  if (node.constructor === Array) {
-    for (let i = 0; i < node.length; i++) {
-      result += doFunction(node[i], i)
-    }
-  } 
-  else result += doFunction(node, 0)
-
-  return result
-}
-
-function applyLumModify(rgbStr, factor, offset) {
-  const color = tinycolor(rgbStr).toHsl()
-  const lum = color.l * (1 + offset)
-  return tinycolor({ h: color.h, s: color.s, l: lum, a: color.a }).toHexString()
-}
-
-function base64ArrayBuffer(arrayBuffer) {
-  let base64 = ''
-  const encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
-  const bytes = new Uint8Array(arrayBuffer)
-  const byteLength = bytes.byteLength
-  const byteRemainder = byteLength % 3
-  const mainLength = byteLength - byteRemainder
-
-  let a, b, c, d
-  let chunk
-
-  for (let i = 0; i < mainLength; i = i + 3) {
-    chunk = (bytes[i] << 16) | (bytes[i + 1] << 8) | bytes[i + 2]
-    a = (chunk & 16515072) >> 18
-    b = (chunk & 258048) >> 12
-    c = (chunk & 4032) >> 6
-    d = chunk & 63
-    base64 += encodings[a] + encodings[b] + encodings[c] + encodings[d]
-  }
-
-  if (byteRemainder === 1) {
-    chunk = bytes[mainLength]
-    a = (chunk & 252) >> 2
-    b = (chunk & 3) << 4
-    base64 += encodings[a] + encodings[b] + '=='
-  } 
-  else if (byteRemainder === 2) {
-    chunk = (bytes[mainLength] << 8) | bytes[mainLength + 1]
-    a = (chunk & 64512) >> 10
-    b = (chunk & 1008) >> 4
-    c = (chunk & 15) << 2
-    base64 += encodings[a] + encodings[b] + encodings[c] + '='
-  }
-
-  return base64
-}
-
-function extractFileExtension(filename) {
-  return filename.substr((~-filename.lastIndexOf('.') >>> 0) + 2)
 }

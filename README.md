@@ -9,6 +9,6 @@
 - 输出 JSON 格式的解析结果；
 
 # 📄 开源协议
-GPL-3.0 license © [pipipi-pikachu](https://github.com/pipipi-pikachu)
+GPL-3.0 LICENSE © [pipipi-pikachu](https://github.com/pipipi-pikachu)
 
 仅供学习，禁止商用

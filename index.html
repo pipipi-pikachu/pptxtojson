@@ -105,6 +105,7 @@
 			reader.onload = async e => {
 				const json = await pptxtojson.parse(e.target.result)
 				editor.set(json)
+				console.log(json)
 			}
 			reader.readAsArrayBuffer(fileName)
 		})
