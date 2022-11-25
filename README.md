@@ -8,6 +8,30 @@
 - 删除了所有非核心代码，仅关注 XML 的解析过程；
 - 输出 JSON 格式的解析结果；
 
+# 安装
+> npm install pptxtojson
+
+# 用法
+```html
+<input type="file" accept="application/vnd.openxmlformats-officedocument.presentationml.presentation"/>
+```
+
+```js
+import { parse } from 'pptxtojson/dist/index.esm'
+
+document.querySelector('input').addEventListener('change', evt => {
+	const file = evt.target.files[0]
+	
+	const reader = new FileReader()
+	reader.onload = async e => {
+		const json = await pptxtojson.parse(e.target.result)
+		console.log(json)
+	}
+	reader.readAsArrayBuffer(file)
+})
+```
+
+
 # 📄 开源协议
 GPL-3.0 LICENSE © [pipipi-pikachu](https://github.com/pipipi-pikachu)
 
