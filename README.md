@@ -8,10 +8,10 @@
 - 删除了所有非核心代码，仅关注 XML 的解析过程；
 - 输出 JSON 格式的解析结果；
 
-# 安装
+# 🔨安装
 > npm install pptxtojson
 
-# 用法
+# 💿用法
 ```html
 <input type="file" accept="application/vnd.openxmlformats-officedocument.presentationml.presentation"/>
 ```
@@ -24,7 +24,7 @@ document.querySelector('input').addEventListener('change', evt => {
 	
 	const reader = new FileReader()
 	reader.onload = async e => {
-		const json = await pptxtojson.parse(e.target.result)
+		const json = await parse(e.target.result)
 		console.log(json)
 	}
 	reader.readAsArrayBuffer(file)
