@@ -4,7 +4,7 @@ import tinycolor from 'tinycolor2'
 
 import { extractFileExtension, base64ArrayBuffer, eachElement, getTextByPathList, angleToDegrees } from './utils'
 
-const FACTOR = 96 / 914400
+const FACTOR = 75 / 914400
 
 let themeContent = null
 
@@ -321,6 +321,10 @@ function processSpNode(node, warpObj) {
     slideMasterSpNode = warpObj['slideMasterTables']['idxTable'][idx]
   }
 
+  if (!type) {
+    const txBoxVal = getTextByPathList(node, ['p:nvSpPr', 'p:cNvSpPr', 'attrs', 'txBox'])
+    if (txBoxVal === '1') type = 'text'
+  }
   if (!type) type = getTextByPathList(slideLayoutSpNode, ['p:nvSpPr', 'p:nvPr', 'p:ph', 'attrs', 'type'])
   if (!type) type = getTextByPathList(slideMasterSpNode, ['p:nvSpPr', 'p:nvPr', 'p:ph', 'attrs', 'type'])
 
@@ -376,7 +380,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
     const fillColor = getShapeFill(node, true)
 
     return {
-      type: 'shape',
+      type: type === 'text' ? 'text' : 'shape',
       left,
       top,
       width,
