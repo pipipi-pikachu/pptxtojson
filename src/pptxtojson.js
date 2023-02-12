@@ -498,59 +498,56 @@ function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, w
   let text = ''
   const slideMasterTextStyles = warpObj['slideMasterTextStyles']
 
-  if (textBodyNode['a:p'].constructor === Array) {
-    for (const pNode of textBodyNode['a:p']) {
-      const rNode = pNode['a:r']
-      text += `<div class="${getHorizontalAlign(pNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles)}">`
-      text += genBuChar(pNode)
-      if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj)
-      else if (rNode.constructor === Array) {
-        for (const rNodeItem of rNode) text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj)
-      } 
-      else text += genSpanElement(rNode, slideLayoutSpNode, type, warpObj)
-      text += '</div>'
-    }
-  } 
-  else {
-    const pNode = textBodyNode['a:p']
+  const pNode = textBodyNode['a:p']
+  const pNodes = pNode.constructor === Array ? pNode : [pNode]
+
+  let isList = ''
+
+  for (const pNode of pNodes) {
     const rNode = pNode['a:r']
-    text += `<div class="${getHorizontalAlign(pNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles)}">`
-    text += genBuChar(pNode)
+    const align = getHorizontalAlign(pNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles)
+
+    const listType = getListType(pNode)
+    if (listType) {
+      if (!isList) {
+        text += `<${listType}>`
+        isList = listType
+      }
+      else if (isList && isList !== listType) {
+        text += `</${isList}>`
+        text += `<${listType}>`
+        isList = listType
+      }
+      text += `<li style="text-align: ${align};">`
+    }
+    else {
+      if (isList) {
+        text += `</${isList}>`
+        isList = ''
+      }
+      text += `<p style="text-align: ${align};">`
+    }
+    
     if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj)
     else if (rNode.constructor === Array) {
       for (const rNodeItem of rNode) text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj)
     } 
     else text += genSpanElement(rNode, slideLayoutSpNode, type, warpObj)
-    text += '</div>'
+
+    if (listType) text += '</li>'
+    else text += '</p>'
   }
   return text
 }
 
-function genBuChar(node) {
+function getListType(node) {
   const pPrNode = node['a:pPr']
+  if (!pPrNode) return ''
 
-  let lvl = parseInt(getTextByPathList(pPrNode, ['attrs', 'lvl']))
-  if (isNaN(lvl)) lvl = 0
-
-  const buChar = getTextByPathList(pPrNode, ['a:buChar', 'attrs', 'char'])
-  if (buChar) {
-    const buFontAttrs = getTextByPathList(pPrNode, ['a:buFont', 'attrs'])
-
-    let marginLeft = parseInt(getTextByPathList(pPrNode, ['attrs', 'marL'])) * FACTOR
-    if (buFontAttrs) {
-      let marginRight = parseInt(buFontAttrs['pitchFamily'])
-
-      if (isNaN(marginLeft)) marginLeft = 328600 * FACTOR
-      if (isNaN(marginRight)) marginRight = 0
-
-      const typeface = buFontAttrs['typeface']
-
-      return `<span style="font-family: ${typeface}; margin-left: ${marginLeft * lvl}px; margin-right: ${marginRight}px; font-size: 20pt;">${buChar}</span>`
-    } 
-    marginLeft = 328600 * FACTOR * lvl
-    return `<span style="margin-left: ${marginLeft}px;">${buChar}</span>`
-  }
-  return `<span style="margin-left: ${328600 * FACTOR * lvl}px; margin-right: 0;"></span>`
+  if (pPrNode['a:buChar']) return 'ul'
+  if (pPrNode['a:buAutoNum']) return 'ol'
+  
+  return ''
 }
 
 function genSpanElement(node, slideLayoutSpNode, type, warpObj) {
@@ -560,22 +557,26 @@ function genSpanElement(node, slideLayoutSpNode, type, warpObj) {
   if (typeof text !== 'string') text = getTextByPathList(node, ['a:fld', 'a:t'])
   if (typeof text !== 'string') text = '&nbsp;'
 
-  const styleText = `
-    color: ${getFontColor(node)};
-    font-size: ${getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles)};
-    font-family: ${getFontType(node, type)};
-    font-weight: ${getFontBold(node)};
-    font-style: ${getFontItalic(node)};
-    text-decoration: ${getFontDecoration(node)};
-    vertical-align: ${getTextVerticalAlign(node)};
-  `
+  let styleText = ''
+  const fontColor = getFontColor(node)
+  const fontSize = getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles)
+  const fontType = getFontType(node, type)
+  const fontBold = getFontBold(node)
+  const fontItalic = getFontItalic(node)
+  const fontDecoration = getFontDecoration(node)
+  if (fontColor) styleText += `color: ${fontColor};`
+  if (fontSize) styleText += `font-size: ${fontSize};`
+  if (fontType) styleText += `font-family: ${fontType};`
+  if (fontBold) styleText += `font-weight: ${fontBold};`
+  if (fontItalic) styleText += `font-style: ${fontItalic};`
+  if (fontDecoration) styleText += `text-decoration: ${fontDecoration};`
 
   const linkID = getTextByPathList(node, ['a:rPr', 'a:hlinkClick', 'attrs', 'r:id'])
   if (linkID) {
     const linkURL = warpObj['slideResObj'][linkID]['target']
-    return `<span class="text-block" style="${styleText}"><a href="${linkURL}" target="_blank">${text.replace(/\s/i, '&nbsp;')}</a></span>`
+    return `<span style="${styleText}"><a href="${linkURL}" target="_blank">${text.replace(/\s/i, '&nbsp;')}</a></span>`
   } 
-  return `<span class="text-block" style="${styleText}">${text.replace(/\s/i, '&nbsp;')}</span>`
+  return `<span style="${styleText}">${text.replace(/\s/i, '&nbsp;')}</span>`
 }
 
 function genTable(node, warpObj) {
@@ -768,10 +769,10 @@ function getHorizontalAlign(node, slideLayoutSpNode, slideMasterSpNode, type, sl
     }
   }
   if (!algn) {
-    if (type === 'title' || type === 'subTitle' || type === 'ctrTitle') return 'h-mid'
-    else if (type === 'sldNum') return 'h-right'
+    if (type === 'title' || type === 'subTitle' || type === 'ctrTitle') return 'center'
+    else if (type === 'sldNum') return 'right'
   }
-  return algn === 'ctr' ? 'h-mid' : algn === 'r' ? 'h-right' : 'h-left'
+  return algn === 'ctr' ? 'center' : algn === 'r' ? 'right' : 'left'
 }
 
 function getFontType(node, type) {
@@ -791,12 +792,12 @@ function getFontType(node, type) {
     }
   }
 
-  return typeface || 'inherit'
+  return typeface || ''
 }
 
 function getFontColor(node) {
   const color = getTextByPathList(node, ['a:rPr', 'a:solidFill', 'a:srgbClr', 'attrs', 'val'])
-  return color ? `#${color}` : '#000'
+  return color ? `#${color}` : ''
 }
 
 function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles) {
@@ -829,24 +830,19 @@ function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles) {
   const baseline = getTextByPathList(node, ['a:rPr', 'attrs', 'baseline'])
   if (baseline && !isNaN(fontSize)) fontSize -= 10
 
-  return (isNaN(fontSize) || !fontSize) ? 'inherit' : (fontSize + 'pt')
+  return (isNaN(fontSize) || !fontSize) ? '24px' : (fontSize / 0.75 + 'px')
 }
 
 function getFontBold(node) {
-  return (node['a:rPr'] && node['a:rPr']['attrs']['b'] === '1') ? 'bold' : 'initial'
+  return (node['a:rPr'] && node['a:rPr']['attrs']['b'] === '1') ? 'bold' : ''
 }
 
 function getFontItalic(node) {
-  return (node['a:rPr'] && node['a:rPr']['attrs']['i'] === '1') ? 'italic' : 'normal'
+  return (node['a:rPr'] && node['a:rPr']['attrs']['i'] === '1') ? 'italic' : ''
 }
 
 function getFontDecoration(node) {
-  return (node['a:rPr'] && node['a:rPr']['attrs']['u'] === 'sng') ? 'underline' : 'initial'
-}
-
-function getTextVerticalAlign(node) {
-  const baseline = getTextByPathList(node, ['a:rPr', 'attrs', 'baseline'])
-  return baseline ? (parseInt(baseline) / 1000) + '%' : 'baseline'
+  return (node['a:rPr'] && node['a:rPr']['attrs']['u'] === 'sng') ? 'underline' : ''
 }
 
 function getBorder(node, isSvgMode) {
