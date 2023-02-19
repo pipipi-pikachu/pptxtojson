@@ -17,13 +17,16 @@ export default {
   onwarn,
   output: [
     {
-      file: 'dist/index.js',
+      file: 'dist/index.umd.js',
       format: 'umd',
       name: 'pptxtojson',
+      sourcemap: true,
     },
     {
-      file: 'dist/index.esm.js',
+      file: 'dist/index.js',
       format: 'es',
+      name: 'pptxtojson',
+      sourcemap: true,
     },
   ],
   plugins: [
