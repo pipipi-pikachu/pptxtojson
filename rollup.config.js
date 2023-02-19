@@ -25,7 +25,6 @@ export default {
     {
       file: 'dist/index.js',
       format: 'es',
-      name: 'pptxtojson',
       sourcemap: true,
     },
   ],

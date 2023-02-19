@@ -17,7 +17,7 @@
 ```
 
 ```js
-import { parse } from 'pptxtojson/dist/index.esm'
+import { parse } from 'pptxtojson'
 
 document.querySelector('input').addEventListener('change', evt => {
 	const file = evt.target.files[0]
