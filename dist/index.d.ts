@@ -17,7 +17,6 @@ export interface Shape {
   shapType: string
   id: string
   name: string
-  idx: number
 }
 
 export interface Text {
@@ -36,7 +35,6 @@ export interface Text {
   content: string
   id: string
   name: string
-  idx: number
 }
 
 export interface Image {
@@ -111,4 +109,12 @@ export type Element = BaseElement | Group
 export interface Slide {
   fill: string
   elements: Element[],
+}
+
+export const parse: (file: File) => {
+  slides: Slide[]
+  size: {
+    width: number
+    height: number
+  }
 }

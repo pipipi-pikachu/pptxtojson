@@ -15,12 +15,12 @@ specifiers:
   rollup: ^3.3.0
   rollup-plugin-node-builtins: ^2.1.2
   rollup-plugin-node-globals: ^1.4.0
-  tinycolor2: ^1.4.2
+  tinycolor2: 1.6.0
   txml: ^5.1.1
 
 dependencies:
   jszip: 3.10.1
-  tinycolor2: 1.4.2
+  tinycolor2: 1.6.0
   txml: 5.1.1
 
 devDependencies:
@@ -2921,8 +2921,8 @@ packages:
       readable-stream: 2.3.7
     dev: false
 
-  /tinycolor2/1.4.2:
-    resolution: {integrity: sha512-vJhccZPs965sV/L2sU4oRQVAos0pQXwsvTLkWYdqJ+a8Q5kPFzJTuOFwy7UniPli44NKQGAglksjvOcpo95aZA==}
+  /tinycolor2/1.6.0:
+    resolution: {integrity: sha512-XPaBkWQJdsf3pLKJV9p4qN/S+fm2Oj8AIPo1BTUhg5oxkvm9+SVEGFdhyOz7tTdUTfvxMiAs4sp6/eZO2Ew+pw==}
     dev: false
 
   /to-fast-properties/2.0.0:
