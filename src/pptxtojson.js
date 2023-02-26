@@ -376,7 +376,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
     const cx = parseInt(ext['cx']) * FACTOR
     const cy = parseInt(ext['cy']) * FACTOR
     
-    const { borderColor, borderWidth, borderType } = getBorder(node, true)
+    const { borderColor, borderWidth, borderType } = getBorder(node)
     const fillColor = getShapeFill(node, true)
 
     return {
@@ -402,7 +402,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
     }
   } 
   
-  const { borderColor, borderWidth, borderType } = getBorder(node, false)
+  const { borderColor, borderWidth, borderType } = getBorder(node)
   const fillColor = getShapeFill(node, false)
 
   return {
@@ -830,7 +830,7 @@ function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles) {
   const baseline = getTextByPathList(node, ['a:rPr', 'attrs', 'baseline'])
   if (baseline && !isNaN(fontSize)) fontSize -= 10
 
-  return (isNaN(fontSize) || !fontSize) ? '24px' : (fontSize / 0.75 + 'px')
+  return (isNaN(fontSize) || !fontSize) ? '18.75px' : (fontSize / 0.75 * (75 / 96) + 'px')
 }
 
 function getFontBold(node) {
@@ -845,11 +845,14 @@ function getFontDecoration(node) {
   return (node['a:rPr'] && node['a:rPr']['attrs']['u'] === 'sng') ? 'underline' : ''
 }
 
-function getBorder(node, isSvgMode) {
+function getBorder(node) {
   const lineNode = node['p:spPr']['a:ln']
 
   let borderWidth = parseInt(getTextByPathList(lineNode, ['attrs', 'w'])) / 12700
-  if (isNaN(borderWidth)) borderWidth = 0
+  if (isNaN(borderWidth)) {
+    if (lineNode) borderWidth = 0
+    else borderWidth = 1
+  }
 
   let borderColor = getTextByPathList(lineNode, ['a:solidFill', 'a:srgbClr', 'attrs', 'val'])
   if (!borderColor) {
@@ -875,13 +878,8 @@ function getBorder(node, isSvgMode) {
     }
   }
 
-  if (!borderColor) {
-    if (isSvgMode) borderColor = 'none'
-    else borderColor = '#000'
-  } 
-  else {
-    borderColor = `#${borderColor}`
-  }
+  if (!borderColor) borderColor = '#000'
+  else borderColor = `#${borderColor}`
 
   const type = getTextByPathList(lineNode, ['a:prstDash', 'attrs', 'val'])
   let borderType = 'solid'
