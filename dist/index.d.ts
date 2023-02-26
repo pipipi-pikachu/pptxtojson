@@ -111,7 +111,7 @@ export interface Slide {
   elements: Element[],
 }
 
-export const parse: (file: File) => {
+export const parse: (file: ArrayBuffer) => {
   slides: Slide[]
   size: {
     width: number
