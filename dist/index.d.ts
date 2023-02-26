@@ -73,7 +73,7 @@ export interface ChartXLabel {
 }
 export interface ChartItem {
   key: string
-  values: ChartValue
+  values: ChartValue[]
   xlabels: ChartXLabel
 }
 export interface Chart {
