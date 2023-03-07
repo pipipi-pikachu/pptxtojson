@@ -70,3 +70,69 @@ export function angleToDegrees(angle) {
   if (!angle) return 0
   return Math.round(angle / 60000)
 }
+
+export function escapeHtml(text) {
+  const map = {
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;',
+  }
+  return text.replace(/[&<>"']/g, m => map[m])
+}
+
+export function getMimeType(imgFileExt) {
+  let mimeType = ''
+  switch (imgFileExt.toLowerCase()) {
+    case 'jpg':
+    case 'jpeg':
+      mimeType = 'image/jpeg'
+      break
+    case 'png':
+      mimeType = 'image/png'
+      break
+    case 'gif':
+      mimeType = 'image/gif'
+      break
+    case 'emf':
+      mimeType = 'image/x-emf'
+      break
+    case 'wmf':
+      mimeType = 'image/x-wmf'
+      break
+    case 'svg':
+      mimeType = 'image/svg+xml'
+      break
+    case 'mp4':
+      mimeType = 'video/mp4'
+      break
+    case 'webm':
+      mimeType = 'video/webm'
+      break
+    case 'ogg':
+      mimeType = 'video/ogg'
+      break
+    case 'avi':
+      mimeType = 'video/avi'
+      break
+    case 'mpg':
+      mimeType = 'video/mpg'
+      break
+    case 'wmv':
+      mimeType = 'video/wmv'
+      break
+    case 'mp3':
+      mimeType = 'audio/mpeg'
+      break
+    case 'wav':
+      mimeType = 'audio/wav'
+      break
+    case 'tif':
+    case 'tiff':
+      mimeType = 'image/tiff'
+      break
+    default:
+  }
+  return mimeType
+}

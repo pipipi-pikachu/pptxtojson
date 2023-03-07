@@ -2,11 +2,20 @@ import JSZip from 'jszip'
 import * as txml from 'txml/dist/txml.mjs'
 import tinycolor from 'tinycolor2'
 
-import { extractFileExtension, base64ArrayBuffer, eachElement, getTextByPathList, angleToDegrees } from './utils'
+import {
+  extractFileExtension,
+  base64ArrayBuffer,
+  eachElement,
+  getTextByPathList,
+  angleToDegrees,
+  escapeHtml,
+  getMimeType,
+} from './utils'
 
 const FACTOR = 75 / 914400
 
 let themeContent = null
+let defaultTextStyle = null
 
 export async function parse(file) {
   const slides = []
@@ -14,15 +23,19 @@ export async function parse(file) {
   const zip = await JSZip.loadAsync(file)
 
   const filesInfo = await getContentTypes(zip)
-  const size = await getSlideSize(zip)
+  const { width, height, defaultTextStyle: _defaultTextStyle } = await getSlideSize(zip)
   themeContent = await loadTheme(zip)
+  defaultTextStyle = _defaultTextStyle
 
   for (const filename of filesInfo.slides) {
     const singleSlide = await processSingleSlide(zip, filename)
     slides.push(singleSlide)
   }
 
-  return { slides, size }
+  return {
+    slides,
+    size: { width, height },
+  }
 }
 
 function simplifyLostLess(children, parentAttributes = {}) {
@@ -86,9 +99,11 @@ async function getContentTypes(zip) {
 async function getSlideSize(zip) {
   const content = await readXmlFile(zip, 'ppt/presentation.xml')
   const sldSzAttrs = content['p:presentation']['p:sldSz']['attrs']
+  const defaultTextStyle = content['p:presentation']['p:defaultTextStyle']
   return {
     width: parseInt(sldSzAttrs['cx']) * FACTOR,
     height: parseInt(sldSzAttrs['cy']) * FACTOR,
+    defaultTextStyle,
   }
 }
 
@@ -119,6 +134,7 @@ async function processSingleSlide(zip, sldFileName) {
   const resContent = await readXmlFile(zip, resName)
   let relationshipArray = resContent['Relationships']['Relationship']
   let layoutFilename = ''
+  let diagramFilename = ''
   const slideResObj = {}
 
   if (relationshipArray.constructor === Array) {
@@ -126,6 +142,13 @@ async function processSingleSlide(zip, sldFileName) {
       switch (relationshipArrayItem['attrs']['Type']) {
         case 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout':
           layoutFilename = relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
+          break
+        case 'http://schemas.microsoft.com/office/2007/relationships/diagramDrawing':
+          diagramFilename = relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
+          slideResObj[relationshipArrayItem['attrs']['Id']] = {
+            type: relationshipArrayItem['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
+            target: relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
+          }
           break
         case 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide':
         case 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image':
@@ -149,6 +172,7 @@ async function processSingleSlide(zip, sldFileName) {
   relationshipArray = slideLayoutResContent['Relationships']['Relationship']
 
   let masterFilename = ''
+  const layoutResObj = {}
   if (relationshipArray.constructor === Array) {
     for (const relationshipArrayItem of relationshipArray) {
       switch (relationshipArrayItem['attrs']['Type']) {
@@ -156,6 +180,10 @@ async function processSingleSlide(zip, sldFileName) {
           masterFilename = relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
           break
         default:
+          layoutResObj[relationshipArrayItem['attrs']['Id']] = {
+            type: relationshipArrayItem['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
+            target: relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/'),
+          }
       }
     }
   } 
@@ -165,17 +193,75 @@ async function processSingleSlide(zip, sldFileName) {
   const slideMasterTextStyles = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:txStyles'])
   const slideMasterTables = indexNodes(slideMasterContent)
 
+  const slideMasterResFilename = masterFilename.replace('slideMasters/slideMaster', 'slideMasters/_rels/slideMaster') + '.rels'
+  const slideMasterResContent = await readXmlFile(zip, slideMasterResFilename)
+  relationshipArray = slideMasterResContent['Relationships']['Relationship']
+  const masterResObj = {}
+  if (relationshipArray.constructor === Array) {
+    for (const relationshipArrayItem of relationshipArray) {
+      switch (relationshipArrayItem['attrs']['Type']) {
+        case 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme':
+          break
+        default:
+          masterResObj[relationshipArrayItem['attrs']['Id']] = {
+            type: relationshipArrayItem['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
+            target: relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/'),
+          }
+      }
+    }
+  }
+
+  const diagramResObj = {}
+  let digramFileContent = {}
+  if (diagramFilename) {
+    const diagName = diagramFilename.split('/').pop()
+    const diagramResFileName = diagramFilename.replace(diagName, '_rels/' + diagName) + '.rels'
+    digramFileContent = await readXmlFile(zip, diagramFilename)
+    if (digramFileContent && digramFileContent && digramFileContent !== '') {
+      let digramFileContentObjToStr = JSON.stringify(digramFileContent)
+      digramFileContentObjToStr = digramFileContentObjToStr.replace(/dsp:/g, 'p:')
+      digramFileContent = JSON.parse(digramFileContentObjToStr)
+    }
+
+    const digramResContent = await readXmlFile(zip, diagramResFileName)
+    if (digramResContent) {
+      relationshipArray = digramResContent['Relationships']['Relationship']
+      if (relationshipArray.constructor === Array) {
+        for (const relationshipArrayItem of relationshipArray) {
+          diagramResObj[relationshipArrayItem['attrs']['Id']] = {
+            type: relationshipArrayItem['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
+            target: relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/'),
+          }
+        }
+      } 
+      else {
+        diagramResObj[relationshipArray['attrs']['Id']] = {
+          type: relationshipArray['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
+          target: relationshipArray['attrs']['Target'].replace('../', 'ppt/'),
+        }
+      }
+    }
+  }
+
   const slideContent = await readXmlFile(zip, sldFileName)
   const nodes = slideContent['p:sld']['p:cSld']['p:spTree']
   const warpObj = {
     zip,
+    slideLayoutContent: slideLayoutContent,
     slideLayoutTables: slideLayoutTables,
+    slideMasterContent: slideMasterContent,
     slideMasterTables: slideMasterTables,
+    slideContent: slideContent,
     slideResObj: slideResObj,
     slideMasterTextStyles: slideMasterTextStyles,
+    layoutResObj: layoutResObj,
+    masterResObj: masterResObj,
+    themeContent: themeContent,
+    digramFileContent: digramFileContent,
+    diagramResObj: diagramResObj,
+    defaultTextStyle: defaultTextStyle,
   }
-
-  const bgColor = '#' + getSlideBackgroundFill(slideContent, slideLayoutContent, slideMasterContent)
+  const bgColor = await getSlideBackgroundFill(warpObj)
 
   const elements = []
   for (const nodeKey in nodes) {
@@ -936,12 +1022,142 @@ function getBorder(node) {
   }
 }
 
-function getSlideBackgroundFill(slideContent, slideLayoutContent, slideMasterContent) {
-  let bgColor = getSolidFill(getTextByPathList(slideContent, ['p:sld', 'p:cSld', 'p:bg', 'p:bgPr', 'a:solidFill']))
-  if (!bgColor) bgColor = getSolidFill(getTextByPathList(slideLayoutContent, ['p:sldLayout', 'p:cSld', 'p:bg', 'p:bgPr', 'a:solidFill']))
-  if (!bgColor) bgColor = getSolidFill(getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:cSld', 'p:bg', 'p:bgPr', 'a:solidFill']))
-  if (!bgColor) bgColor = 'fff'
-  return bgColor
+function getFillType(node) {
+  let fillType = ''
+  if (node['a:noFill']) fillType = 'NO_FILL'
+  if (node['a:solidFill']) fillType = 'SOLID_FILL'
+  if (node['a:gradFill']) fillType = 'GRADIENT_FILL'
+  if (node['a:pattFill']) fillType = 'PATTERN_FILL'
+  if (node['a:blipFill']) fillType = 'PIC_FILL'
+  if (node['a:grpFill']) fillType = 'GROUP_FILL'
+
+  return fillType
+}
+
+async function getPicFill(type, node, warpObj) {
+  let img
+  const rId = node['a:blip']['attrs']['r:embed']
+  let imgPath
+  if (type === 'slideBg' || type === 'slide') {
+    imgPath = getTextByPathList(warpObj, ['slideResObj', rId, 'target'])
+  }
+  else if (type === 'slideLayoutBg') {
+    imgPath = getTextByPathList(warpObj, ['layoutResObj', rId, 'target'])
+  }
+  else if (type === 'slideMasterBg') {
+    imgPath = getTextByPathList(warpObj, ['masterResObj', rId, 'target'])
+  }
+  else if (type === 'themeBg') {
+    imgPath = getTextByPathList(warpObj, ['themeResObj', rId, 'target'])
+  }
+  else if (type === 'diagramBg') {
+    imgPath = getTextByPathList(warpObj, ['diagramResObj', rId, 'target'])
+  }
+  if (!imgPath) return imgPath
+
+  img = getTextByPathList(warpObj, ['loaded-images', imgPath])
+  if (!img) {
+    imgPath = escapeHtml(imgPath)
+
+    const imgExt = imgPath.split('.').pop()
+    if (imgExt === 'xml') return undefined
+
+    const imgArrayBuffer = await warpObj['zip'].file(imgPath).async('arraybuffer')
+    const imgMimeType = getMimeType(imgExt)
+    img = 'data:' + imgMimeType + 'base64,' + base64ArrayBuffer(imgArrayBuffer)
+  }
+  return img
+}
+
+async function getBgPicFill(bgPr, sorce, warpObj) {
+  const picBase64 = await getPicFill(sorce, bgPr['a:blipFill'], warpObj)
+  const aBlipNode = bgPr['a:blipFill']['a:blip']
+
+  const aphaModFixNode = getTextByPathList(aBlipNode, ['a:alphaModFix', 'attrs'])
+  let opacity = 1
+  if (aphaModFixNode && aphaModFixNode['amt'] && aphaModFixNode['amt'] !== '') {
+    opacity = parseInt(aphaModFixNode['amt']) / 100000
+  }
+
+  return {
+    picBase64,
+    opacity,
+  }
+}
+
+async function getSlideBackgroundFill(warpObj) {
+  const slideContent = warpObj['slideContent']
+  const slideLayoutContent = warpObj['slideLayoutContent']
+  const slideMasterContent = warpObj['slideMasterContent']
+  
+  let bgPr = getTextByPathList(slideContent, ['p:sld', 'p:cSld', 'p:bg', 'p:bgPr'])
+
+  let background = '#fff'
+  let backgroundType = 'color'
+
+  if (bgPr) {
+    const bgFillTyp = getFillType(bgPr)
+
+    if (bgFillTyp === 'SOLID_FILL') {
+      const sldFill = bgPr['a:solidFill']
+      let clrMapOvr
+      const sldClrMapOvr = getTextByPathList(slideContent, ['p:sld', 'p:clrMapOvr', 'a:overrideClrMapping', 'attrs'])
+      if (sldClrMapOvr) clrMapOvr = sldClrMapOvr
+      else {
+        const sldClrMapOvr = getTextByPathList(slideLayoutContent, ['p:sldLayout', 'p:clrMapOvr', 'a:overrideClrMapping', 'attrs'])
+        if (sldClrMapOvr) clrMapOvr = sldClrMapOvr
+        else clrMapOvr = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:clrMap', 'attrs'])
+      }
+      const sldBgClr = getSolidFill(sldFill, clrMapOvr, undefined, warpObj)
+      background = `#${sldBgClr}`
+    }
+    else if (bgFillTyp === 'PIC_FILL') {
+      background = await getBgPicFill(bgPr, 'slideBg', warpObj)
+      backgroundType = 'image'
+    }
+  }
+  else {
+    bgPr = getTextByPathList(slideLayoutContent, ['p:sldLayout', 'p:cSld', 'p:bg', 'p:bgPr'])
+
+    let clrMapOvr
+    const sldClrMapOvr = getTextByPathList(slideLayoutContent, ['p:sldLayout', 'p:clrMapOvr', 'a:overrideClrMapping', 'attrs'])
+    if (sldClrMapOvr) clrMapOvr = sldClrMapOvr
+    else clrMapOvr = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:clrMap', 'attrs'])
+
+    if (bgPr) {
+      const bgFillTyp = getFillType(bgPr)
+      if (bgFillTyp === 'SOLID_FILL') {
+        const sldFill = bgPr['a:solidFill']
+        const sldBgClr = getSolidFill(sldFill, clrMapOvr, undefined, warpObj)
+        background = `#${sldBgClr}`
+      }
+      else if (bgFillTyp === 'PIC_FILL') {
+        background = await getBgPicFill(bgPr, 'slideLayoutBg', warpObj)
+        backgroundType = 'image'
+      }
+    }
+    else {
+      bgPr = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:cSld', 'p:bg', 'p:bgPr'])
+
+      const clrMap = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:clrMap', 'attrs'])
+      if (bgPr) {
+        const bgFillTyp = getFillType(bgPr)
+        if (bgFillTyp === 'SOLID_FILL') {
+          const sldFill = bgPr['a:solidFill']
+          const sldBgClr = getSolidFill(sldFill, clrMap, undefined, warpObj)
+          background = `#${sldBgClr}`
+        }
+        else if (bgFillTyp === 'PIC_FILL') {
+          background = await getBgPicFill(bgPr, 'slideMasterBg', warpObj)
+          backgroundType = 'image'
+        }
+      }
+    }
+  }
+  return {
+    type: backgroundType,
+    value: background,
+  }
 }
 
 function getShapeFill(node, isSvgMode) {
