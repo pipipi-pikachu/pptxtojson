@@ -13,6 +13,9 @@
 	},
 	"author": "",
 	"license": "GPL-3.0",
+	"publishConfig": {
+		"registry": "https://registry.npmjs.com/"
+	},
 	"dependencies": {
 		"jszip": "^3.10.1",
 		"tinycolor2": "1.6.0",
