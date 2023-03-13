@@ -102,13 +102,28 @@ export interface Group {
   top: number
   width: number
   height: number
-  elements: BaseElement[],
+  elements: BaseElement[]
 }
 export type Element = BaseElement | Group
 
+export interface SlideColorFill {
+  type: 'color'
+  value: string
+}
+
+export interface SlideImageFill {
+  type: 'image'
+  value: {
+    picBase64: string
+    opacity: number
+  }
+}
+
+export type SlideFill = SlideColorFill | SlideImageFill
+
 export interface Slide {
-  fill: string
-  elements: Element[],
+  fill: SlideFill
+  elements: Element[]
 }
 
 export const parse: (file: ArrayBuffer) => {
