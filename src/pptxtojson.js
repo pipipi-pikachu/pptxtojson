@@ -457,13 +457,13 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
   let content = ''
   if (node['p:txBody']) content = genTextBody(node['p:txBody'], slideLayoutSpNode, slideMasterSpNode, type, warpObj)
 
+  const { borderColor, borderWidth, borderType } = getBorder(node, type)
+  const fillColor = getShapeFill(node)
+
   if (shapType) {
     const ext = getTextByPathList(slideXfrmNode, ['a:ext', 'attrs'])
     const cx = parseInt(ext['cx']) * FACTOR
     const cy = parseInt(ext['cy']) * FACTOR
-    
-    const { borderColor, borderWidth, borderType } = getBorder(node)
-    const fillColor = getShapeFill(node, true)
 
     return {
       type: type === 'text' ? 'text' : 'shape',
@@ -486,10 +486,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
       name,
       idx,
     }
-  } 
-  
-  const { borderColor, borderWidth, borderType } = getBorder(node)
-  const fillColor = getShapeFill(node, false)
+  }
 
   return {
     type: 'text',
@@ -604,14 +601,14 @@ function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, w
         text += `<${listType}>`
         isList = listType
       }
-      text += `<li style="text-align: ${align};">`
+      text += `<li style="text-align: ${align}; color: ${type === 'text' ? '#000000' : '#ffffff'}">`
     }
     else {
       if (isList) {
         text += `</${isList}>`
         isList = ''
       }
-      text += `<p style="text-align: ${align};">`
+      text += `<p style="text-align: ${align}; color: ${type === 'text' ? '#000000' : '#ffffff'}">`
     }
     
     if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj)
@@ -931,12 +928,13 @@ function getFontDecoration(node) {
   return (node['a:rPr'] && node['a:rPr']['attrs']['u'] === 'sng') ? 'underline' : ''
 }
 
-function getBorder(node) {
+function getBorder(node, elType) {
   const lineNode = node['p:spPr']['a:ln']
 
   let borderWidth = parseInt(getTextByPathList(lineNode, ['attrs', 'w'])) / 12700
   if (isNaN(borderWidth)) {
     if (lineNode) borderWidth = 0
+    else if (elType === 'text') borderWidth = 0
     else borderWidth = 1
   }
 
