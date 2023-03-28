@@ -458,7 +458,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
   if (node['p:txBody']) content = genTextBody(node['p:txBody'], slideLayoutSpNode, slideMasterSpNode, type, warpObj)
 
   const { borderColor, borderWidth, borderType } = getBorder(node, type)
-  const fillColor = getShapeFill(node)
+  const fillColor = getShapeFill(node) || ''
 
   if (shapType) {
     const ext = getTextByPathList(slideXfrmNode, ['a:ext', 'attrs'])
@@ -1160,7 +1160,7 @@ async function getSlideBackgroundFill(warpObj) {
 
 function getShapeFill(node, isSvgMode) {
   if (getTextByPathList(node, ['p:spPr', 'a:noFill'])) {
-    return isSvgMode ? 'none' : 'background-color: initial;'
+    return isSvgMode ? 'none' : ''
   }
 
   let fillColor

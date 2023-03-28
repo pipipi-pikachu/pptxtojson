@@ -63,7 +63,7 @@ export interface Table {
   data: TableCell[][]
 }
 
-export type ChartType = 'lineChart' | 'stackedBarChart' | 'barChart' | 'pieChart' | 'pie3DChart' | 'stackedAreaChart' | 'areaChart' | 'scatterChart'
+export type ChartType = 'lineChart' | 'stackedBarChart' | 'barChart' | 'pieChart' | 'pie3DChart' | 'stackedAreaChart' | 'areaChart'
 export interface ChartValue {
   x: string
   y: number
@@ -76,7 +76,8 @@ export interface ChartItem {
   values: ChartValue[]
   xlabels: ChartXLabel
 }
-export interface Chart {
+export type ScatterChartData = [number[], number[]]
+export interface CommonChart {
   type: 'chart'
   left: number
   top: number
@@ -85,6 +86,16 @@ export interface Chart {
   data: ChartItem[],
   chartType: ChartType
 }
+export interface ScatterChart {
+  type: 'chart'
+  left: number
+  top: number
+  width: number
+  height: number
+  data: ScatterChartData,
+  chartType: 'scatterChart'
+}
+export type Chart = CommonChart | ScatterChart
 
 export interface Diagram {
   type: 'diagram'
