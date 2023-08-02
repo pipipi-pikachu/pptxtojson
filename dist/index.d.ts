@@ -130,7 +130,16 @@ export interface SlideImageFill {
   }
 }
 
-export type SlideFill = SlideColorFill | SlideImageFill
+export interface SlideGradientFill {
+  type: 'gradient'
+  value: {
+    rot: number
+    colors: string[]
+    pos: string[]
+  }
+}
+
+export type SlideFill = SlideColorFill | SlideImageFill | SlideGradientFill
 
 export interface Slide {
   fill: SlideFill
