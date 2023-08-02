@@ -461,8 +461,10 @@ function processSpNode(node, warpObj) {
 function processCxnSpNode(node, warpObj) {
   const id = node['p:nvCxnSpPr']['p:cNvPr']['attrs']['id']
   const name = node['p:nvCxnSpPr']['p:cNvPr']['attrs']['name']
+  const idx = (node['p:nvCxnSpPr']['p:nvPr']['p:ph'] === undefined) ? undefined : node['p:nvSpPr']['p:nvPr']['p:ph']['attrs']['idx']
+  const type = (node['p:nvCxnSpPr']['p:nvPr']['p:ph'] === undefined) ? undefined : node['p:nvSpPr']['p:nvPr']['p:ph']['attrs']['type']
 
-  return genShape(node, undefined, undefined, id, name, undefined, undefined, warpObj)
+  return genShape(node, undefined, undefined, id, name, idx, type, warpObj)
 }
 
 function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, type, warpObj) {
