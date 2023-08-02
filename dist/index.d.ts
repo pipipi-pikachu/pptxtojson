@@ -113,6 +113,7 @@ export interface Group {
   top: number
   width: number
   height: number
+  rotate: number
   elements: BaseElement[]
 }
 export type Element = BaseElement | Group

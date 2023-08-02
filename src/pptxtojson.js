@@ -394,6 +394,11 @@ async function processGroupSpNode(node, warpObj) {
   const cy = parseInt(xfrmNode['a:ext']['attrs']['cy']) * FACTOR
   const chcx = parseInt(xfrmNode['a:chExt']['attrs']['cx']) * FACTOR
   const chcy = parseInt(xfrmNode['a:chExt']['attrs']['cy']) * FACTOR
+  let rotate = parseInt(xfrmNode['attrs']['rot'])
+
+  if (!isNaN(rotate)) {
+    rotate = angleToDegrees(rotate)
+  }
 
   const elements = []
   for (const nodeKey in node) {
@@ -415,6 +420,7 @@ async function processGroupSpNode(node, warpObj) {
     left: x - chx,
     width: cx - chcx,
     height: cy - chcy,
+    rotate,
     elements,
   }
 }
