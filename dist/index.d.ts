@@ -15,6 +15,8 @@ export interface Shape {
   isFlipH: boolean
   rotate: number
   shapType: string
+  vAlign: string
+  path?: string
   id: string
   name: string
 }
@@ -33,6 +35,7 @@ export interface Text {
   isFlipH: boolean
   rotate: number
   content: string
+  vAlign: string
   id: string
   name: string
 }
