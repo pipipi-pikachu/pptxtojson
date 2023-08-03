@@ -217,13 +217,13 @@ async function processSingleSlide(zip, sldFileName) {
   }
 
   const themeResObj = {}
-  if (themeFilename !== undefined) {
+  if (themeFilename) {
     const themeName = themeFilename.split('/').pop()
     const themeResFileName = themeFilename.replace(themeName, '_rels/' + themeName) + '.rels'
-    const themeResContent = readXmlFile(zip, themeResFileName)
-    if (themeResContent !== null) {
+    const themeResContent = await readXmlFile(zip, themeResFileName)
+    if (themeResContent) {
       relationshipArray = themeResContent['Relationships']['Relationship']
-      if (relationshipArray !== undefined) {
+      if (relationshipArray) {
         if (relationshipArray.constructor === Array) {
           for (const relationshipArrayItem of relationshipArray) {
             themeResObj[relationshipArrayItem['attrs']['Id']] = {
@@ -394,11 +394,6 @@ async function processGroupSpNode(node, warpObj) {
   const cy = parseInt(xfrmNode['a:ext']['attrs']['cy']) * FACTOR
   const chcx = parseInt(xfrmNode['a:chExt']['attrs']['cx']) * FACTOR
   const chcy = parseInt(xfrmNode['a:chExt']['attrs']['cy']) * FACTOR
-  let rotate = parseInt(xfrmNode['attrs']['rot'])
-
-  if (!isNaN(rotate)) {
-    rotate = angleToDegrees(rotate)
-  }
 
   const elements = []
   for (const nodeKey in node) {
@@ -420,7 +415,6 @@ async function processGroupSpNode(node, warpObj) {
     left: x - chx,
     width: cx - chcx,
     height: cy - chcy,
-    rotate,
     elements,
   }
 }
@@ -585,11 +579,9 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
             const moveToNoPt = moveToPtNode[key2]
             const spX = moveToNoPt['attrs', 'x']
             const spY = moveToNoPt['attrs', 'y']
-            const ptOrdr = moveToNoPt['attrs', 'order']
             
             multiSapeAry.push({
               type: 'movto',
-              order: ptOrdr,
               x: spX,
               y: spY,
             })
@@ -605,10 +597,8 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
               const lnToNoPt = lnToPtNode[key2]
               const ptX = lnToNoPt['attrs', 'x']
               const ptY = lnToNoPt['attrs', 'y']
-              const ptOrdr = lnToNoPt['attrs', 'order']
               multiSapeAry.push({
                 type: 'lnto',
-                order: ptOrdr,
                 x: ptX,
                 y: ptY,
               })
@@ -638,7 +628,6 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
           })
           multiSapeAry.push({
             type: 'cubicBezTo',
-            order: key2[0]['attrs']['order'],
             cubBzPt: pts_ary
           })
         })
@@ -646,7 +635,6 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
       // a:arcTo
       if (arcToNodes) {
         const arcToNodesAttrs = arcToNodes['attrs']
-        const arcOrder = arcToNodesAttrs['order']
         const hR = arcToNodesAttrs['hR']
         const wR = arcToNodesAttrs['wR']
         const stAng = arcToNodesAttrs['stAng']
@@ -661,7 +649,6 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
         
         multiSapeAry.push({
           type: 'arcTo',
-          order: arcOrder,
           hR: hR,
           wR: wR,
           stAng: stAng,
@@ -674,18 +661,12 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
       // a:close
       if (closeNode) {
         if (!Array.isArray(closeNode)) closeNode = [closeNode]
-        Object.keys(closeNode).forEach(key => {
-          const clsAttrs = closeNode[key]['attrs']
-          const clsOrder = clsAttrs['order']
-          
+        Object.keys(closeNode).forEach(() => {
           multiSapeAry.push({
             type: 'close',
-            order: clsOrder,
           })
         })
       }
-
-      multiSapeAry.sort((a, b) => a.order - b.order)
 
       let k = 0
       while (k < multiSapeAry.length) {
@@ -806,28 +787,8 @@ async function processPicNode(node, warpObj) {
   const zip = warpObj['zip']
   const imgArrayBuffer = await zip.file(imgName).async('arraybuffer')
   const xfrmNode = node['p:spPr']['a:xfrm']
-  let mimeType = ''
 
-  switch (imgFileExt) {
-    case 'jpg':
-    case 'jpeg':
-      mimeType = 'image/jpeg'
-      break
-    case 'png':
-      mimeType = 'image/png'
-      break
-    case 'gif':
-      mimeType = 'image/gif'
-      break
-    case 'emf':
-      mimeType = 'image/x-emf'
-      break
-    case 'wmf':
-      mimeType = 'image/x-wmf'
-      break
-    default:
-      mimeType = 'image/*'
-  }
+  const mimeType = getMimeType(imgFileExt)
   const { top, left } = getPosition(xfrmNode, undefined, undefined)
   const { width, height } = getSize(xfrmNode, undefined, undefined)
   const src = `data:${mimeType};base64,${base64ArrayBuffer(imgArrayBuffer)}`
@@ -861,6 +822,11 @@ async function processGraphicFrameNode(node, warpObj) {
     case 'http://schemas.openxmlformats.org/drawingml/2006/diagram':
       result = genDiagram(node, warpObj)
       break
+    case 'http://schemas.openxmlformats.org/presentationml/2006/ole':
+      let oleObjNode = getTextByPathList(node, ['a:graphic', 'a:graphicData', 'mc:AlternateContent', 'mc:Fallback', 'p:oleObj'])
+      if (!oleObjNode) oleObjNode = getTextByPathList(node, ['a:graphic', 'a:graphicData', 'p:oleObj'])
+      else processGroupSpNode(oleObjNode, warpObj)
+      break
     default:
   }
   return result
@@ -878,7 +844,26 @@ function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, w
   let isList = ''
 
   for (const pNode of pNodes) {
-    const rNode = pNode['a:r']
+    let rNode = pNode['a:r']
+    let fldNode = pNode['a:fld']
+    let brNode = pNode['a:br']
+    if (rNode) {
+      rNode = (rNode.constructor === Array) ? rNode : [rNode]
+
+      if (fldNode) {
+        fldNode = (fldNode.constructor === Array) ? fldNode : [fldNode]
+        rNode = rNode.concat(fldNode)
+      }
+      if (brNode) {
+        brNode = (brNode.constructor === Array) ? brNode : [brNode]
+        brNode.forEach(item => item.type = 'br')
+  
+        if (brNode.length > 1) brNode.shift()
+        rNode = rNode.concat(brNode)
+        rNode.sort((a, b) => a.attrs.order - b.attrs.order)
+      }
+    }
+
     const align = getHorizontalAlign(pNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles)
 
     const listType = getListType(pNode)
@@ -903,10 +888,11 @@ function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, w
     }
     
     if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj)
-    else if (rNode.constructor === Array) {
-      for (const rNodeItem of rNode) text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj)
-    } 
-    else text += genSpanElement(rNode, slideLayoutSpNode, type, warpObj)
+    else {
+      for (const rNodeItem of rNode) {
+        text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj)
+      }
+    }
 
     if (listType) text += '</li>'
     else text += '</p>'
@@ -1411,7 +1397,6 @@ async function getSlideBackgroundFill(warpObj) {
   const slideMasterContent = warpObj['slideMasterContent']
   
   let bgPr = getTextByPathList(slideContent, ['p:sld', 'p:cSld', 'p:bg', 'p:bgPr'])
-  let bgRef = getTextByPathList(slideContent, ['p:sld', 'p:cSld', 'p:bg', 'p:bgRef'])
 
   let background = '#fff'
   let backgroundType = 'color'
@@ -1447,75 +1432,8 @@ async function getSlideBackgroundFill(warpObj) {
       backgroundType = 'image'
     }
   }
-  else if (bgRef) {
-    let clrMapOvr
-    let sldClrMapOvr = getTextByPathList(slideContent, ['p:sld', 'p:clrMapOvr', 'a:overrideClrMapping', 'attrs'])
-    if (sldClrMapOvr) clrMapOvr = sldClrMapOvr
-    else {
-      sldClrMapOvr = getTextByPathList(slideLayoutContent, ['p:sldLayout', 'p:clrMapOvr', 'a:overrideClrMapping', 'attrs'])
-      if (sldClrMapOvr) clrMapOvr = sldClrMapOvr
-      else {
-        clrMapOvr = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:clrMap', 'attrs'])
-      }
-    }
-    const phClr = getSolidFill(bgRef, clrMapOvr, undefined, warpObj)
-
-    const idx = Number(bgRef['attrs']['idx'])
-
-    if (idx > 1000) {
-      const trueIdx = idx - 1000
-      const bgFillLst = warpObj['themeContent']['a:theme']['a:themeElements']['a:fmtScheme']['a:bgFillStyleLst']
-      const sortblAry = []
-      Object.keys(bgFillLst).forEach(key => {
-        const bgFillLstTyp = bgFillLst[key]
-        if (key !== 'attrs') {
-          if (bgFillLstTyp.constructor === Array) {
-            for (let i = 0; i < bgFillLstTyp.length; i++) {
-              sortblAry.push({
-                [key]: bgFillLstTyp[i],
-                idex: bgFillLstTyp[i]['attrs']['order'],
-                attrs: {
-                  order: bgFillLstTyp[i]['attrs']['order']
-                },
-              })
-            }
-          } 
-          else {
-            sortblAry.push({
-              [key]: bgFillLstTyp,
-              idex: bgFillLstTyp['attrs']['order'],
-              attrs: {
-                order: bgFillLstTyp['attrs']['order'],
-              },
-            })
-          }
-        }
-      })
-      const sortByOrder = sortblAry.slice(0)
-      sortByOrder.sort((a, b) => a.idex - b.idex)
-
-      const bgFillLstIdx = sortByOrder[trueIdx - 1]
-      const bgFillTyp = getFillType(bgFillLstIdx)
-      if (bgFillTyp === 'SOLID_FILL') {
-        const sldFill = bgFillLstIdx['a:solidFill']
-        const sldBgClr = getSolidFill(sldFill, clrMapOvr, undefined, warpObj)
-        background = `#${sldBgClr}`
-      } 
-      else if (bgFillTyp === 'GRADIENT_FILL') {
-        const gradientFill = getBgGradientFill(bgFillLstIdx, phClr, slideMasterContent, warpObj)
-        if (typeof gradientFill === 'string') {
-          background = gradientFill
-        }
-        else if (gradientFill) {
-          background = gradientFill
-          backgroundType = 'gradient'
-        }
-      }
-    }
-  }
   else {
     bgPr = getTextByPathList(slideLayoutContent, ['p:sldLayout', 'p:cSld', 'p:bg', 'p:bgPr'])
-    bgRef = getTextByPathList(slideLayoutContent, ['p:sldLayout', 'p:cSld', 'p:bg', 'p:bgRef'])
 
     let clrMapOvr
     const sldClrMapOvr = getTextByPathList(slideLayoutContent, ['p:sldLayout', 'p:clrMapOvr', 'a:overrideClrMapping', 'attrs'])
@@ -1544,68 +1462,8 @@ async function getSlideBackgroundFill(warpObj) {
         backgroundType = 'image'
       }
     }
-    else if (bgRef) {
-      const phClr = getSolidFill(bgRef, clrMapOvr, undefined, warpObj)
-      const idx = Number(bgRef['attrs']['idx'])
-  
-      if (idx > 1000) {
-        const trueIdx = idx - 1000
-        const bgFillLst = warpObj['themeContent']['a:theme']['a:themeElements']['a:fmtScheme']['a:bgFillStyleLst']
-        const sortblAry = []
-        Object.keys(bgFillLst).forEach(key => {
-          const bgFillLstTyp = bgFillLst[key]
-          if (key !== 'attrs') {
-            if (bgFillLstTyp.constructor === Array) {
-              for (let i = 0; i < bgFillLstTyp.length; i++) {
-                sortblAry.push({
-                  [key]: bgFillLstTyp[i],
-                  idex: bgFillLstTyp[i]['attrs']['order'],
-                  attrs: {
-                    order: bgFillLstTyp[i]['attrs']['order']
-                  },
-                })
-              }
-            } 
-            else {
-              sortblAry.push({
-                [key]: bgFillLstTyp,
-                idex: bgFillLstTyp['attrs']['order'],
-                attrs: {
-                  order: bgFillLstTyp['attrs']['order'],
-                },
-              })
-            }
-          }
-        })
-        const sortByOrder = sortblAry.slice(0)
-        sortByOrder.sort((a, b) => a.idex - b.idex)
-  
-        const bgFillLstIdx = sortByOrder[trueIdx - 1]
-        const bgFillTyp = getFillType(bgFillLstIdx)
-        if (bgFillTyp === 'SOLID_FILL') {
-          const sldFill = bgFillLstIdx['a:solidFill']
-          const sldBgClr = getSolidFill(sldFill, clrMapOvr, phClr, warpObj)
-          background = `#${sldBgClr}`
-        } 
-        else if (bgFillTyp === 'GRADIENT_FILL') {
-          const gradientFill = getBgGradientFill(bgFillLstIdx, phClr, slideMasterContent, warpObj)
-          if (typeof gradientFill === 'string') {
-            background = gradientFill
-          }
-          else if (gradientFill) {
-            background = gradientFill
-            backgroundType = 'gradient'
-          }
-        }
-        else if (bgFillTyp === 'PIC_FILL') {
-          background = await getBgPicFill(bgFillLstIdx, 'themeBg', warpObj)
-          backgroundType = 'image'
-        }
-      }
-    }
     else {
       bgPr = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:cSld', 'p:bg', 'p:bgPr'])
-      bgRef = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:cSld', 'p:bg', 'p:bgRef'])
 
       const clrMap = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:clrMap', 'attrs'])
       if (bgPr) {
@@ -1628,65 +1486,6 @@ async function getSlideBackgroundFill(warpObj) {
         else if (bgFillTyp === 'PIC_FILL') {
           background = await getBgPicFill(bgPr, 'slideMasterBg', warpObj)
           backgroundType = 'image'
-        }
-      }
-      else if (bgRef) {
-        const phClr = getSolidFill(bgRef, clrMap, undefined, warpObj)
-        const idx = Number(bgRef['attrs']['idx'])
-    
-        if (idx > 1000) {
-          const trueIdx = idx - 1000
-          const bgFillLst = warpObj['themeContent']['a:theme']['a:themeElements']['a:fmtScheme']['a:bgFillStyleLst']
-          const sortblAry = []
-          Object.keys(bgFillLst).forEach(key => {
-            const bgFillLstTyp = bgFillLst[key]
-            if (key !== 'attrs') {
-              if (bgFillLstTyp.constructor === Array) {
-                for (let i = 0; i < bgFillLstTyp.length; i++) {
-                  sortblAry.push({
-                    [key]: bgFillLstTyp[i],
-                    idex: bgFillLstTyp[i]['attrs']['order'],
-                    attrs: {
-                      order: bgFillLstTyp[i]['attrs']['order']
-                    },
-                  })
-                }
-              } 
-              else {
-                sortblAry.push({
-                  [key]: bgFillLstTyp,
-                  idex: bgFillLstTyp['attrs']['order'],
-                  attrs: {
-                    order: bgFillLstTyp['attrs']['order'],
-                  },
-                })
-              }
-            }
-          })
-          const sortByOrder = sortblAry.slice(0)
-          sortByOrder.sort((a, b) => a.idex - b.idex)
-    
-          const bgFillLstIdx = sortByOrder[trueIdx - 1]
-          const bgFillTyp = getFillType(bgFillLstIdx)
-          if (bgFillTyp === 'SOLID_FILL') {
-            const sldFill = bgFillLstIdx['a:solidFill']
-            const sldBgClr = getSolidFill(sldFill, clrMap, phClr, warpObj)
-            background = `#${sldBgClr}`
-          } 
-          else if (bgFillTyp === 'GRADIENT_FILL') {
-            const gradientFill = getBgGradientFill(bgFillLstIdx, phClr, slideMasterContent, warpObj)
-            if (typeof gradientFill === 'string') {
-              background = gradientFill
-            }
-            else if (gradientFill) {
-              background = gradientFill
-              backgroundType = 'gradient'
-            }
-          }
-          else if (bgFillTyp === 'PIC_FILL') {
-            background = await getBgPicFill(bgFillLstIdx, 'themeBg', warpObj)
-            backgroundType = 'image'
-          }
         }
       }
     }

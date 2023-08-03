@@ -56,6 +56,7 @@ module.exports = {
     'no-useless-return': 'error',
     'array-bracket-spacing': 'error',
     'no-useless-escape': 'off',
+    'no-case-declarations': 'off',
     'no-eval': 'error',
     'no-var': 'error',
     'no-with': 'error',
