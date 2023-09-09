@@ -886,14 +886,14 @@ function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, w
         text += `<${listType}>`
         isList = listType
       }
-      text += `<li style="text-align: ${align}; color: ${type === 'text' ? '#000000' : '#ffffff'}">`
+      text += `<li style="text-align: ${align};">`
     }
     else {
       if (isList) {
         text += `</${isList}>`
         isList = ''
       }
-      text += `<p style="text-align: ${align}; color: ${type === 'text' ? '#000000' : '#ffffff'}">`
+      text += `<p style="text-align: ${align};">`
     }
     
     if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj)

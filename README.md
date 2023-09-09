@@ -33,6 +33,4 @@ document.querySelector('input').addEventListener('change', evt => {
 
 
 # 📄 开源协议
-GPL-3.0 LICENSE © [pipipi-pikachu](https://github.com/pipipi-pikachu)
-
-仅供学习，禁止商用
+AGPL-3.0 License | Copyright © 2020-PRESENT [pipipi-pikachu](https://github.com/pipipi-pikachu)
