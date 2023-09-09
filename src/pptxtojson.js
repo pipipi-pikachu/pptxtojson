@@ -76,8 +76,8 @@ async function readXmlFile(zip, filename) {
 async function getContentTypes(zip) {
   const ContentTypesJson = await readXmlFile(zip, '[Content_Types].xml')
   const subObj = ContentTypesJson['Types']['Override']
-  const slidesLocArray = []
-  const slideLayoutsLocArray = []
+  let slidesLocArray = []
+  let slideLayoutsLocArray = []
 
   for (const item of subObj) {
     switch (item['attrs']['ContentType']) {
@@ -90,6 +90,15 @@ async function getContentTypes(zip) {
       default:
     }
   }
+  
+  const sortSlideXml = (p1, p2) => {
+    const n1 = +/(\d+)\.xml/.exec(p1)[1]
+    const n2 = +/(\d+)\.xml/.exec(p2)[1]
+    return n1 - n2
+  }
+  slidesLocArray = slidesLocArray.sort(sortSlideXml)
+  slideLayoutsLocArray = slideLayoutsLocArray.sort(sortSlideXml)
+  
   return {
     slides: slidesLocArray,
     slideLayouts: slideLayoutsLocArray,
