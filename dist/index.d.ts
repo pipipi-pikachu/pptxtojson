@@ -149,10 +149,10 @@ export interface Slide {
   elements: Element[]
 }
 
-export const parse: (file: ArrayBuffer) => {
+export const parse: (file: ArrayBuffer) => Promise<{
   slides: Slide[]
   size: {
     width: number
     height: number
   }
-}
+}>
