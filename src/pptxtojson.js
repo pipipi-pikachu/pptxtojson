@@ -143,7 +143,6 @@ async function processSingleSlide(zip, sldFileName) {
   const resContent = await readXmlFile(zip, resName)
   let relationshipArray = resContent['Relationships']['Relationship']
   let layoutFilename = ''
-  let diagramFilename = ''
   const slideResObj = {}
 
   if (relationshipArray.constructor === Array) {
@@ -153,7 +152,6 @@ async function processSingleSlide(zip, sldFileName) {
           layoutFilename = relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
           break
         case 'http://schemas.microsoft.com/office/2007/relationships/diagramDrawing':
-          diagramFilename = relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
           slideResObj[relationshipArrayItem['attrs']['Id']] = {
             type: relationshipArrayItem['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
             target: relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
@@ -251,38 +249,6 @@ async function processSingleSlide(zip, sldFileName) {
     }
   }
 
-  const diagramResObj = {}
-  let digramFileContent = {}
-  if (diagramFilename) {
-    const diagName = diagramFilename.split('/').pop()
-    const diagramResFileName = diagramFilename.replace(diagName, '_rels/' + diagName) + '.rels'
-    digramFileContent = await readXmlFile(zip, diagramFilename)
-    if (digramFileContent && digramFileContent && digramFileContent !== '') {
-      let digramFileContentObjToStr = JSON.stringify(digramFileContent)
-      digramFileContentObjToStr = digramFileContentObjToStr.replace(/dsp:/g, 'p:')
-      digramFileContent = JSON.parse(digramFileContentObjToStr)
-    }
-
-    const digramResContent = await readXmlFile(zip, diagramResFileName)
-    if (digramResContent) {
-      relationshipArray = digramResContent['Relationships']['Relationship']
-      if (relationshipArray.constructor === Array) {
-        for (const relationshipArrayItem of relationshipArray) {
-          diagramResObj[relationshipArrayItem['attrs']['Id']] = {
-            type: relationshipArrayItem['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
-            target: relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/'),
-          }
-        }
-      } 
-      else {
-        diagramResObj[relationshipArray['attrs']['Id']] = {
-          type: relationshipArray['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
-          target: relationshipArray['attrs']['Target'].replace('../', 'ppt/'),
-        }
-      }
-    }
-  }
-
   const slideContent = await readXmlFile(zip, sldFileName)
   const nodes = slideContent['p:sld']['p:cSld']['p:spTree']
   const warpObj = {
@@ -298,8 +264,6 @@ async function processSingleSlide(zip, sldFileName) {
     masterResObj: masterResObj,
     themeContent: themeContent,
     themeResObj: themeResObj,
-    digramFileContent: digramFileContent,
-    diagramResObj: diagramResObj,
     defaultTextStyle: defaultTextStyle,
   }
   const bgColor = await getSlideBackgroundFill(warpObj)
@@ -869,7 +833,10 @@ function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, w
   
         if (brNode.length > 1) brNode.shift()
         rNode = rNode.concat(brNode)
-        rNode.sort((a, b) => a.attrs.order - b.attrs.order)
+        rNode.sort((a, b) => {
+          if (!a.attrs || !b.attrs) return true
+          return a.attrs.order - b.attrs.order
+        })
       }
     }
 
@@ -974,7 +941,7 @@ function genTable(node, warpObj) {
         }
       } 
       else {
-        const text = genTextBody(tcNodes['a:txBody'])
+        const text = genTextBody(tcNodes['a:txBody'], undefined, undefined, undefined, warpObj)
         tr.push({ text })
       }
 
@@ -987,12 +954,12 @@ function genTable(node, warpObj) {
 
     if (tcNodes.constructor === Array) {
       for (const tcNode of tcNodes) {
-        const text = genTextBody(tcNode['a:txBody'])
+        const text = genTextBody(tcNode['a:txBody'], undefined, undefined, undefined, warpObj)
         tr.push({ text })
       }
     } 
     else {
-      const text = genTextBody(tcNodes['a:txBody'])
+      const text = genTextBody(tcNodes['a:txBody'], undefined, undefined, undefined, warpObj)
       tr.push({ text })
     }
     data.push(tr)
@@ -1333,9 +1300,6 @@ async function getPicFill(type, node, warpObj) {
   }
   else if (type === 'themeBg') {
     imgPath = getTextByPathList(warpObj, ['themeResObj', rId, 'target'])
-  }
-  else if (type === 'diagramBg') {
-    imgPath = getTextByPathList(warpObj, ['diagramResObj', rId, 'target'])
   }
   if (!imgPath) return imgPath
 
