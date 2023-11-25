@@ -12,7 +12,7 @@ import {
   getMimeType,
 } from './utils'
 
-const FACTOR = 75 / 914400
+const FACTOR = 96 / 914400
 
 let themeContent = null
 let defaultTextStyle = null
