@@ -137,8 +137,10 @@ export interface SlideGradientFill {
   type: 'gradient'
   value: {
     rot: number
-    colors: string[]
-    pos: string[]
+    colors: {
+      pos: string
+      color: string
+    }[]
   }
 }
 

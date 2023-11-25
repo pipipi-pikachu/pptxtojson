@@ -34,7 +34,10 @@ export async function parse(file) {
 
   return {
     slides,
-    size: { width, height },
+    size: {
+      width,
+      height,
+    },
   }
 }
 
@@ -1338,15 +1341,15 @@ function getBgGradientFill(bgPr, phClr, slideMasterContent, warpObj) {
     const grdFill = bgPr['a:gradFill']
     const gsLst = grdFill['a:gsLst']['a:gs']
     const color_ary = []
-    const pos_ary = []
     
     for (let i = 0; i < gsLst.length; i++) {
       const lo_color = getSolidFill(gsLst[i], slideMasterContent['p:sldMaster']['p:clrMap']['attrs'], phClr, warpObj)
       const pos = getTextByPathList(gsLst[i], ['attrs', 'pos'])
-      
-      if (pos) pos_ary[i] = pos / 1000 + '%'
-      else pos_ary[i] = ''
-      color_ary[i] = `#${lo_color}`
+
+      color_ary[i] = {
+        pos: pos ? (pos / 1000 + '%') : '',
+        color: `#${lo_color}`,
+      }
     }
     const lin = grdFill['a:lin']
     let rot = 90
@@ -1354,10 +1357,10 @@ function getBgGradientFill(bgPr, phClr, slideMasterContent, warpObj) {
       rot = angleToDegrees(lin['attrs']['ang'])
       rot = rot + 90
     }
+
     return {
       rot,
-      colors: color_ary,
-      pos: pos_ary,
+      colors: color_ary.sort((a, b) => parseInt(a.pos) - parseInt(b.pos)),
     }
   }
   else if (phClr) return `#${phClr}`
