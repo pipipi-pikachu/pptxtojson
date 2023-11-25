@@ -516,7 +516,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
   let content = ''
   if (node['p:txBody']) content = genTextBody(node['p:txBody'], slideLayoutSpNode, slideMasterSpNode, type, warpObj)
 
-  const { borderColor, borderWidth, borderType } = getBorder(node, type)
+  const { borderColor, borderWidth, borderType, strokeDasharray } = getBorder(node, type)
   const fillColor = getShapeFill(node) || ''
 
   const vAlign = getVerticalAlign(node, slideLayoutSpNode, slideMasterSpNode, type)
@@ -692,6 +692,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
       borderColor,
       borderWidth,
       borderType,
+      borderStrokeDasharray: strokeDasharray,
       fillColor,
       content,
       isFlipV,
@@ -722,6 +723,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
       borderColor,
       borderWidth,
       borderType,
+      borderStrokeDasharray: strokeDasharray,
       fillColor,
       content,
       isFlipV,
@@ -744,6 +746,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
     borderColor,
     borderWidth,
     borderType,
+    borderStrokeDasharray: strokeDasharray,
     fillColor,
     isFlipV,
     isFlipH,
@@ -1246,7 +1249,7 @@ function getBorder(node, elType) {
       strokeDasharray = '10, 5'
       break
     case 'lgDashDotDot':
-      borderType = 'dashed'
+      borderType = 'dotted'
       strokeDasharray = '10, 5, 1, 5, 1, 5'
       break
     case 'sysDash':
@@ -1254,11 +1257,11 @@ function getBorder(node, elType) {
       strokeDasharray = '5, 2'
       break
     case 'sysDashDot':
-      borderType = 'dashed'
+      borderType = 'dotted'
       strokeDasharray = '5, 2, 1, 5'
       break
     case 'sysDashDotDot':
-      borderType = 'dashed'
+      borderType = 'dotted'
       strokeDasharray = '5, 2, 1, 5, 1, 5'
       break
     case 'sysDot':

@@ -8,7 +8,8 @@ export interface Shape {
   cy: number
   borderColor: string
   borderWidth: number
-  borderType: 'solid' | 'dashed'
+  borderType: 'solid' | 'dashed' | 'dotted'
+  borderStrokeDasharray: string
   fillColor: string
   content: string
   isFlipV: boolean
@@ -29,7 +30,8 @@ export interface Text {
   height: number
   borderColor: string
   borderWidth: number
-  borderType: 'solid' | 'dashed'
+  borderType: 'solid' | 'dashed' | 'dotted'
+  borderStrokeDasharray: string
   fillColor: string
   isFlipV: boolean
   isFlipH: boolean
