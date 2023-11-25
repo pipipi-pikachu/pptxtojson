@@ -68,7 +68,22 @@ export interface Table {
   data: TableCell[][]
 }
 
-export type ChartType = 'lineChart' | 'stackedBarChart' | 'barChart' | 'pieChart' | 'pie3DChart' | 'stackedAreaChart' | 'areaChart'
+export type ChartType = 'lineChart' |
+  'line3DChart' |
+  'barChart' |
+  'bar3DChart' |
+  'pieChart' |
+  'pie3DChart' |
+  'doughnutChart' |
+  'areaChart' |
+  'area3DChart' |
+  'scatterChart' |
+  'bubbleChart' |
+  'radarChart' |
+  'surfaceChart' |
+  'surface3DChart' |
+  'stockChart'
+
 export interface ChartValue {
   x: string
   y: number
@@ -88,8 +103,13 @@ export interface CommonChart {
   top: number
   width: number
   height: number
-  data: ChartItem[],
+  data: ChartItem[]
   chartType: ChartType
+  barDir?: 'bar' | 'col'
+  marker?: boolean
+  holeSize?: string
+  grouping?: string
+  style?: string
 }
 export interface ScatterChart {
   type: 'chart'

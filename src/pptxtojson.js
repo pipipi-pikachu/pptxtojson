@@ -998,12 +998,31 @@ async function genChart(node, warpObj) {
         chart = {
           type: 'lineChart',
           data: extractChartData(plotArea[key]['c:ser']),
+          grouping: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']),
+          marker: plotArea[key]['c:marker'] ? true : false,
+        }
+        break
+      case 'c:line3DChart':
+        chart = {
+          type: 'line3DChart',
+          data: extractChartData(plotArea[key]['c:ser']),
+          grouping: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']),
         }
         break
       case 'c:barChart':
         chart = {
-          type: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']) === 'stacked' ? 'stackedBarChart' : 'barChart',
+          type: 'barChart',
           data: extractChartData(plotArea[key]['c:ser']),
+          grouping: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']),
+          barDir: getTextByPathList(plotArea[key], ['c:barDir', 'attrs', 'val']),
+        }
+        break
+      case 'c:bar3DChart':
+        chart = {
+          type: 'bar3DChart',
+          data: extractChartData(plotArea[key]['c:ser']),
+          grouping: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']),
+          barDir: getTextByPathList(plotArea[key], ['c:barDir', 'attrs', 'val']),
         }
         break
       case 'c:pieChart':
@@ -1018,28 +1037,72 @@ async function genChart(node, warpObj) {
           data: extractChartData(plotArea[key]['c:ser']),
         }
         break
+      case 'c:doughnutChart':
+        chart = {
+          type: 'doughnutChart',
+          data: extractChartData(plotArea[key]['c:ser']),
+          holeSize: getTextByPathList(plotArea[key], ['c:holeSize', 'attrs', 'val']),
+        }
+        break
       case 'c:areaChart':
         chart = {
-          type: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']) === 'percentStacked' ? 'stackedAreaChart' : 'areaChart',
+          type: 'areaChart',
           data: extractChartData(plotArea[key]['c:ser']),
+          grouping: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']),
+        }
+        break
+      case 'c:area3DChart':
+        chart = {
+          type: 'area3DChart',
+          data: extractChartData(plotArea[key]['c:ser']),
+          grouping: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']),
         }
         break
       case 'c:scatterChart':
         chart = {
           type: 'scatterChart',
           data: extractChartData(plotArea[key]['c:ser']),
+          style: getTextByPathList(plotArea[key], ['c:scatterStyle', 'attrs', 'val']),
         }
         break
-      case 'c:catAx':
+      case 'c:bubbleChart':
+        chart = {
+          type: 'bubbleChart',
+          data: extractChartData(plotArea[key]['c:ser']),
+        }
         break
-      case 'c:valAx':
+      case 'c:radarChart':
+        chart = {
+          type: 'radarChart',
+          data: extractChartData(plotArea[key]['c:ser']),
+          style: getTextByPathList(plotArea[key], ['c:radarStyle', 'attrs', 'val']),
+        }
+        break
+      case 'c:surfaceChart':
+        chart = {
+          type: 'surfaceChart',
+          data: extractChartData(plotArea[key]['c:ser']),
+        }
+        break
+      case 'c:surface3DChart':
+        chart = {
+          type: 'surface3DChart',
+          data: extractChartData(plotArea[key]['c:ser']),
+        }
+        break
+      case 'c:stockChart':
+        chart = {
+          type: 'stockChart',
+          data: extractChartData(plotArea[key]['c:ser']),
+        }
         break
       default:
     }
   }
 
   if (!chart) return {}
-  return {
+
+  const data = {
     type: 'chart',
     top,
     left,
@@ -1048,6 +1111,13 @@ async function genChart(node, warpObj) {
     data: chart.data,
     chartType: chart.type,
   }
+  if (chart.marker !== undefined) data.marker = chart.marker
+  if (chart.barDir !== undefined) data.barDir = chart.barDir
+  if (chart.holeSize !== undefined) data.holeSize = chart.holeSize
+  if (chart.grouping !== undefined) data.grouping = chart.grouping
+  if (chart.style !== undefined) data.style = chart.style
+
+  return data
 }
 
 function genDiagram(node) {
