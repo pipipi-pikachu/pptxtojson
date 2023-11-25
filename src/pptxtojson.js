@@ -520,6 +520,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
   const fillColor = getShapeFill(node) || ''
 
   const vAlign = getVerticalAlign(node, slideLayoutSpNode, slideMasterSpNode, type)
+  const isVertical = getTextByPathList(node, ['p:txBody', 'a:bodyPr', 'attrs', 'vert']) === 'eaVert'
 
   if (custShapType) {
     const pathLstNode = getTextByPathList(custShapType, ['a:pathLst'])
@@ -707,13 +708,13 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
     }
   }
 
-  if (shapType) {
+  if (shapType && type !== 'text') {
     const ext = getTextByPathList(slideXfrmNode, ['a:ext', 'attrs'])
     const cx = parseInt(ext['cx']) * FACTOR
     const cy = parseInt(ext['cy']) * FACTOR
 
     return {
-      type: type === 'text' ? 'text' : 'shape',
+      type: 'shape',
       left,
       top,
       width,
@@ -750,6 +751,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
     fillColor,
     isFlipV,
     isFlipH,
+    isVertical,
     rotate: txtRotate,
     content,
     vAlign,

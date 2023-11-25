@@ -35,6 +35,7 @@ export interface Text {
   fillColor: string
   isFlipV: boolean
   isFlipH: boolean
+  isVertical: boolean
   rotate: number
   content: string
   vAlign: string
