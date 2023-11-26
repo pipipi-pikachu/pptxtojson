@@ -472,13 +472,11 @@ function shapeArc(cX, cY, rX, rY, stAng, endAng, isClose) {
 
 function getVerticalAlign(node, slideLayoutSpNode, slideMasterSpNode) {
   let anchor = getTextByPathList(node, ['p:txBody', 'a:bodyPr', 'attrs', 'anchor'])
-  if (anchor) {
+  if (!anchor) {
     anchor = getTextByPathList(slideLayoutSpNode, ['p:txBody', 'a:bodyPr', 'attrs', 'anchor'])
-    if (anchor) {
+    if (!anchor) {
       anchor = getTextByPathList(slideMasterSpNode, ['p:txBody', 'a:bodyPr', 'attrs', 'anchor'])
-      if (anchor) {
-        anchor = 't'
-      }
+      if (!anchor) anchor = 't'
     }
   }
   return (anchor === 'ctr') ? 'mid' : ((anchor === 'b') ? 'down' : 'up')
