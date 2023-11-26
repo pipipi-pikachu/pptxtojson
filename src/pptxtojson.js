@@ -361,7 +361,9 @@ async function processNodesInSlide(nodeKey, nodeValue, warpObj) {
 }
 
 async function processGroupSpNode(node, warpObj) {
-  const xfrmNode = node['p:grpSpPr']['a:xfrm']
+  const xfrmNode = getTextByPathList(node, ['p:grpSpPr', 'a:xfrm'])
+  if (!xfrmNode) return null
+
   const x = parseInt(xfrmNode['a:off']['attrs']['x']) * FACTOR
   const y = parseInt(xfrmNode['a:off']['attrs']['y']) * FACTOR
   const chx = parseInt(xfrmNode['a:chOff']['attrs']['x']) * FACTOR
