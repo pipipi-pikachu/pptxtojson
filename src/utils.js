@@ -39,16 +39,16 @@ export function extractFileExtension(filename) {
   return filename.substr((~-filename.lastIndexOf('.') >>> 0) + 2)
 }
 
-export function eachElement(node, doFunction) {
+export function eachElement(node, func) {
   if (!node) return node
 
   let result = ''
   if (node.constructor === Array) {
     for (let i = 0; i < node.length; i++) {
-      result += doFunction(node[i], i)
+      result += func(node[i], i)
     }
   } 
-  else result += doFunction(node, 0)
+  else result += func(node, 0)
 
   return result
 }
