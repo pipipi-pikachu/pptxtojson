@@ -31,6 +31,11 @@ export function simplifyLostLess(children, parentAttributes = {}) {
 }
 
 export async function readXmlFile(zip, filename) {
-  const data = await zip.file(filename).async('string')
-  return simplifyLostLess(txml.parse(data))
+  try {
+    const data = await zip.file(filename).async('string')
+    return simplifyLostLess(txml.parse(data))
+  }
+  catch {
+    return null
+  }
 }

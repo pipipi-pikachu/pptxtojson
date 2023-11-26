@@ -148,9 +148,10 @@ export interface Diagram {
   top: number
   width: number
   height: number
+  elements: Shape | Text
 }
 
-export type BaseElement = Shape | Text | Image | Table | Chart | Diagram | Video | Audio
+export type BaseElement = Shape | Text | Image | Table | Chart | Video | Audio | Diagram
 
 export interface Group {
   type: 'group'

@@ -103,6 +103,7 @@ async function processSingleSlide(zip, sldFileName, themeContent, defaultTextSty
   const resContent = await readXmlFile(zip, resName)
   let relationshipArray = resContent['Relationships']['Relationship']
   let layoutFilename = ''
+  let diagramFilename = ''
   const slideResObj = {}
 
   if (relationshipArray.constructor === Array) {
@@ -112,6 +113,7 @@ async function processSingleSlide(zip, sldFileName, themeContent, defaultTextSty
           layoutFilename = relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
           break
         case 'http://schemas.microsoft.com/office/2007/relationships/diagramDrawing':
+          diagramFilename = relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
           slideResObj[relationshipArrayItem['attrs']['Id']] = {
             type: relationshipArrayItem['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
             target: relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
@@ -207,6 +209,37 @@ async function processSingleSlide(zip, sldFileName, themeContent, defaultTextSty
     }
   }
 
+  const diagramResObj = {}
+  let digramFileContent = {}
+  if (diagramFilename) {
+    const diagName = diagramFilename.split('/').pop()
+    const diagramResFileName = diagramFilename.replace(diagName, '_rels/' + diagName) + '.rels'
+    digramFileContent = await readXmlFile(zip, diagramFilename)
+    if (digramFileContent && digramFileContent && digramFileContent) {
+      let digramFileContentObjToStr = JSON.stringify(digramFileContent)
+      digramFileContentObjToStr = digramFileContentObjToStr.replace(/dsp:/g, 'p:')
+      digramFileContent = JSON.parse(digramFileContentObjToStr)
+    }
+    const digramResContent = await readXmlFile(zip, diagramResFileName)
+    if (digramResContent) {
+      relationshipArray = digramResContent['Relationships']['Relationship']
+      if (relationshipArray.constructor === Array) {
+        for (const relationshipArrayItem of relationshipArray) {
+          diagramResObj[relationshipArrayItem['attrs']['Id']] = {
+            'type': relationshipArrayItem['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
+            'target': relationshipArrayItem['attrs']['Target'].replace('../', 'ppt/')
+          }
+        }
+      } 
+      else {
+        diagramResObj[relationshipArray['attrs']['Id']] = {
+          'type': relationshipArray['attrs']['Type'].replace('http://schemas.openxmlformats.org/officeDocument/2006/relationships/', ''),
+          'target': relationshipArray['attrs']['Target'].replace('../', 'ppt/')
+        }
+      }
+    }
+  }
+
   const slideContent = await readXmlFile(zip, sldFileName)
   const nodes = slideContent['p:sld']['p:cSld']['p:spTree']
   const warpObj = {
@@ -222,6 +255,8 @@ async function processSingleSlide(zip, sldFileName, themeContent, defaultTextSty
     masterResObj: masterResObj,
     themeContent: themeContent,
     themeResObj: themeResObj,
+    digramFileContent: digramFileContent,
+    diagramResObj: diagramResObj,
     defaultTextStyle: defaultTextStyle,
   }
   const bgColor = await getSlideBackgroundFill(warpObj)
@@ -292,10 +327,10 @@ async function processNodesInSlide(nodeKey, nodeValue, warpObj) {
     case 'p:sp': // Shape, Text
       json = processSpNode(nodeValue, warpObj)
       break
-    case 'p:cxnSp': // Shape, Text (with connection)
+    case 'p:cxnSp': // Shape, Text
       json = processCxnSpNode(nodeValue, warpObj)
       break
-    case 'p:pic': // Picture
+    case 'p:pic': // Image, Video, Audio
       json = processPicNode(nodeValue, warpObj)
       break
     case 'p:graphicFrame': // Chart, Diagram, Table
@@ -350,11 +385,11 @@ async function processGroupSpNode(node, warpObj) {
   }
 }
 
-function processSpNode(node, warpObj) {
-  const id = node['p:nvSpPr']['p:cNvPr']['attrs']['id']
-  const name = node['p:nvSpPr']['p:cNvPr']['attrs']['name']
-  const idx = node['p:nvSpPr']['p:nvPr']['p:ph'] ? node['p:nvSpPr']['p:nvPr']['p:ph']['attrs']['idx'] : undefined
-  let type = node['p:nvSpPr']['p:nvPr']['p:ph'] ? node['p:nvSpPr']['p:nvPr']['p:ph']['attrs']['type'] : undefined
+function processSpNode(node, warpObj, source) {
+  const id = getTextByPathList(node, ['p:nvSpPr', 'p:cNvPr', 'attrs', 'id'])
+  const name = getTextByPathList(node, ['p:nvSpPr', 'p:cNvPr', 'attrs', 'name'])
+  const idx = getTextByPathList(node, ['p:nvSpPr', 'p:nvPr', 'p:ph', 'attrs', 'idx'])
+  let type = getTextByPathList(node, ['p:nvSpPr', 'p:nvPr', 'p:ph', 'attrs', 'type'])
 
   let slideLayoutSpNode, slideMasterSpNode
 
@@ -379,6 +414,11 @@ function processSpNode(node, warpObj) {
   }
   if (!type) type = getTextByPathList(slideLayoutSpNode, ['p:nvSpPr', 'p:nvPr', 'p:ph', 'attrs', 'type'])
   if (!type) type = getTextByPathList(slideMasterSpNode, ['p:nvSpPr', 'p:nvPr', 'p:ph', 'attrs', 'type'])
+
+  if (!type) {
+    if (source === 'diagramBg') type = 'diagram'
+    else type = 'obj'
+  }
 
   return genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, type, warpObj)
 }
@@ -446,7 +486,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
     idx,
   }
 
-  if (custShapType) {
+  if (custShapType && type !== 'diagram') {
     const ext = getTextByPathList(slideXfrmNode, ['a:ext', 'attrs'])
     const cx = parseInt(ext['cx']) * FACTOR
     const cy = parseInt(ext['cy']) * FACTOR
@@ -700,10 +740,19 @@ async function genChart(node, warpObj) {
   return data
 }
 
-function genDiagram(node) {
+function genDiagram(node, warpObj) {
   const xfrmNode = getTextByPathList(node, ['p:xfrm'])
   const { left, top } = getPosition(xfrmNode, undefined, undefined, FACTOR)
   const { width, height } = getSize(xfrmNode, undefined, undefined, FACTOR)
+  
+  const dgmDrwSpArray = getTextByPathList(warpObj['digramFileContent'], ['p:drawing', 'p:spTree', 'p:sp'])
+  const elements = []
+  if (dgmDrwSpArray) {
+    for (const item of dgmDrwSpArray) {
+      const el = processSpNode(item, warpObj, 'diagramBg')
+      if (el) elements.push(el)
+    }
+  }
 
   return {
     type: 'diagram',
@@ -711,5 +760,6 @@ function genDiagram(node) {
     top,
     width,
     height,
+    elements,
   }
 }
