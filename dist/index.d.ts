@@ -148,7 +148,7 @@ export interface Diagram {
   top: number
   width: number
   height: number
-  elements: Shape | Text
+  elements: (Shape | Text)[]
 }
 
 export type BaseElement = Shape | Text | Image | Table | Chart | Video | Audio | Diagram
