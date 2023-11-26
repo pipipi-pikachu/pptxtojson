@@ -123,6 +123,25 @@ export interface ScatterChart {
 }
 export type Chart = CommonChart | ScatterChart
 
+export interface Video {
+  type: 'video'
+  left: number
+  top: number
+  width: number
+  height: number
+  blob?: string
+  src?: string
+}
+
+export interface Audio {
+  type: 'audio'
+  left: number
+  top: number
+  width: number
+  height: number
+  blob: string
+}
+
 export interface Diagram {
   type: 'diagram'
   left: number
@@ -131,7 +150,7 @@ export interface Diagram {
   height: number
 }
 
-export type BaseElement = Shape | Text | Image | Table | Chart | Diagram
+export type BaseElement = Shape | Text | Image | Table | Chart | Diagram | Video | Audio
 
 export interface Group {
   type: 'group'
