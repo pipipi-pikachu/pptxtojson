@@ -25,7 +25,7 @@ export function getFontColor(node) {
   return color ? `#${color}` : ''
 }
 
-export function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles) {
+export function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles, fontsizeFactor) {
   let fontSize
 
   if (node['a:rPr']) fontSize = parseInt(node['a:rPr']['attrs']['sz']) / 100
@@ -55,7 +55,9 @@ export function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles
   const baseline = getTextByPathList(node, ['a:rPr', 'attrs', 'baseline'])
   if (baseline && !isNaN(fontSize)) fontSize -= 10
 
-  return (isNaN(fontSize) || !fontSize) ? '18.75px' : (fontSize / 0.75 * (75 / 96) + 'px')
+  fontSize = (isNaN(fontSize) || !fontSize) ? 18 : fontSize
+
+  return fontSize * fontsizeFactor + 'px'
 }
 
 export function getFontBold(node) {

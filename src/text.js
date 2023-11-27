@@ -10,7 +10,7 @@ import {
   getFontDecoration,
 } from './fontStyle'
 
-export function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, warpObj) {
+export function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, warpObj, fontsizeFactor) {
   if (!textBodyNode) return ''
 
   let text = ''
@@ -68,10 +68,10 @@ export function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, 
       text += `<p style="text-align: ${align};">`
     }
     
-    if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj)
+    if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj, fontsizeFactor)
     else {
       for (const rNodeItem of rNode) {
-        text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj)
+        text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj, fontsizeFactor)
       }
     }
 
@@ -91,7 +91,7 @@ export function getListType(node) {
   return ''
 }
 
-export function genSpanElement(node, slideLayoutSpNode, type, warpObj) {
+export function genSpanElement(node, slideLayoutSpNode, type, warpObj, fontsizeFactor) {
   const slideMasterTextStyles = warpObj['slideMasterTextStyles']
 
   let text = node['a:t']
@@ -100,7 +100,7 @@ export function genSpanElement(node, slideLayoutSpNode, type, warpObj) {
 
   let styleText = ''
   const fontColor = getFontColor(node)
-  const fontSize = getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles)
+  const fontSize = getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles, fontsizeFactor)
   const fontType = getFontType(node, type, warpObj)
   const fontBold = getFontBold(node)
   const fontItalic = getFontItalic(node)

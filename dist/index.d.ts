@@ -194,7 +194,12 @@ export interface Slide {
   elements: Element[]
 }
 
-export const parse: (file: ArrayBuffer) => Promise<{
+export interface Options {
+  slideFactor?: number
+  fontsizeFactor?: number
+}
+
+export const parse: (file: ArrayBuffer, options?: Options) => Promise<{
   slides: Slide[]
   size: {
     width: number
