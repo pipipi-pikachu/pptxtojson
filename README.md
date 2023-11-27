@@ -1,12 +1,8 @@
 # 🎨 PPTX2JSON
-这是一个派生于 [PPTX2HTML](https://github.com/g21589/PPTX2HTML) 的工具。可以将 .pptx 文件解析为 JSON 数据。目前还不足以用于生产环境。
+这是一个可以将PPT幻灯片(.pptx)文件解析为 JSON 数据的库。
 
 在线DEMO：https://pipipi-pikachu.github.io/pptx2json/
 
-相较于原版：
-- 使用更现代的语法和依赖重写（原项目年代较久远），方便阅读和理解；
-- 删除了所有非核心代码，仅关注 XML 的解析过程；
-- 输出 JSON 格式的解析结果；
 
 # 🔨安装
 > npm install pptxtojson
@@ -19,18 +15,25 @@
 ```js
 import { parse } from 'pptxtojson'
 
+const options = {
+	slideFactor: 75 / 914400, // 幻灯片尺寸转换因子，默认 96 / 914400
+	fontsizeFactor: 100 / 96, // 字号转换因子，默认 100 / 75
+}
+
 document.querySelector('input').addEventListener('change', evt => {
 	const file = evt.target.files[0]
 	
 	const reader = new FileReader()
 	reader.onload = async e => {
-		const json = await parse(e.target.result)
+		const json = await parse(e.target.result, options)
 		console.log(json)
 	}
 	reader.readAsArrayBuffer(file)
 })
 ```
 
+# 🙏 感谢
+> 本仓库主要参考了 [PPTX2HTML](https://github.com/g21589/PPTX2HTML) 、[PPTXjs](https://github.com/meshesha/PPTXjs) 的实现
 
 # 📄 开源协议
 AGPL-3.0 License | Copyright © 2020-PRESENT [pipipi-pikachu](https://github.com/pipipi-pikachu)
