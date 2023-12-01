@@ -1,3 +1,10 @@
+export interface Shadow {
+  h: number
+  v: number
+  blur: number
+  color: string
+}
+
 export interface Shape {
   type: 'shape'
   left: number
@@ -10,6 +17,7 @@ export interface Shape {
   borderWidth: number
   borderType: 'solid' | 'dashed' | 'dotted'
   borderStrokeDasharray: string
+  shadow?: Shadow
   fillColor: string
   content: string
   isFlipV: boolean
@@ -32,6 +40,7 @@ export interface Text {
   borderWidth: number
   borderType: 'solid' | 'dashed' | 'dotted'
   borderStrokeDasharray: string
+  shadow?: Shadow
   fillColor: string
   isFlipV: boolean
   isFlipH: boolean

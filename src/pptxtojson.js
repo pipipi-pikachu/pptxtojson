@@ -8,6 +8,7 @@ import { getPosition, getSize } from './position'
 import { genTextBody } from './text'
 import { getCustomShapePath } from './shape'
 import { extractFileExtension, base64ArrayBuffer, getTextByPathList, angleToDegrees, getMimeType, isVideoLink, escapeHtml } from './utils'
+import { getShadow } from './shadow'
 
 let SLIDE_FACTOR = 96 / 914400
 let FONTSIZE_FACTOR = 100 / 75
@@ -474,6 +475,10 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
   const { borderColor, borderWidth, borderType, strokeDasharray } = getBorder(node, type, warpObj)
   const fillColor = getShapeFill(node, undefined, warpObj) || ''
 
+  let shadow
+  const outerShdwNode = getTextByPathList(node, ['p:spPr', 'a:effectLst', 'a:outerShdw'])
+  if (outerShdwNode) shadow = getShadow(outerShdwNode, warpObj, SLIDE_FACTOR)
+
   const vAlign = getVerticalAlign(node, slideLayoutSpNode, slideMasterSpNode, type)
   const isVertical = getTextByPathList(node, ['p:txBody', 'a:bodyPr', 'attrs', 'vert']) === 'eaVert'
 
@@ -496,6 +501,8 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
     name,
     idx,
   }
+
+  if (shadow) data.shadow = shadow
 
   if (custShapType && type !== 'diagram') {
     const ext = getTextByPathList(slideXfrmNode, ['a:ext', 'attrs'])

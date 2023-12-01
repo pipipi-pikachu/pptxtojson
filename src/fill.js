@@ -1,11 +1,22 @@
 import tinycolor from 'tinycolor2'
 import { getSchemeColorFromTheme } from './schemeColor'
 import {
+  applyShade,
+  applyTint,
+  applyLumOff,
+  applyLumMod,
+  applyHueMod,
+  applySatMod,
+  hslToRgb,
+} from './color'
+
+import {
   base64ArrayBuffer,
   getTextByPathList,
   angleToDegrees,
   escapeHtml,
   getMimeType,
+  toHex,
 } from './utils'
 
 export function getFillType(node) {
@@ -245,6 +256,7 @@ export function getSolidFill(solidFill, clrMap, phClr, warpObj) {
   if (!solidFill) return solidFill
 
   let color = 'fff'
+  let clrNode
 
   if (solidFill['a:srgbClr']) {
     color = getTextByPathList(solidFill['a:srgbClr'], ['attrs', 'val'])
@@ -252,6 +264,66 @@ export function getSolidFill(solidFill, clrMap, phClr, warpObj) {
   else if (solidFill['a:schemeClr']) {
     const schemeClr = 'a:' + getTextByPathList(solidFill['a:schemeClr'], ['attrs', 'val'])
     color = getSchemeColorFromTheme(schemeClr, warpObj)
+  }
+  else if (solidFill['a:scrgbClr']) {
+    clrNode = solidFill['a:scrgbClr']
+    const defBultColorVals = clrNode['attrs']
+    const red = (defBultColorVals['r'].indexOf('%') !== -1) ? defBultColorVals['r'].split('%').shift() : defBultColorVals['r']
+    const green = (defBultColorVals['g'].indexOf('%') !== -1) ? defBultColorVals['g'].split('%').shift() : defBultColorVals['g']
+    const blue = (defBultColorVals['b'].indexOf('%') !== -1) ? defBultColorVals['b'].split('%').shift() : defBultColorVals['b']
+    color = toHex(255 * (Number(red) / 100)) + toHex(255 * (Number(green) / 100)) + toHex(255 * (Number(blue) / 100))
+  } 
+  else if (solidFill['a:prstClr']) {
+    clrNode = solidFill['a:prstClr']
+    color = getTextByPathList(clrNode, ['attrs', 'val'])
+  } 
+  else if (solidFill['a:hslClr']) {
+    clrNode = solidFill['a:hslClr']
+    const defBultColorVals = clrNode['attrs']
+    const hue = Number(defBultColorVals['hue']) / 100000
+    const sat = Number((defBultColorVals['sat'].indexOf('%') !== -1) ? defBultColorVals['sat'].split('%').shift() : defBultColorVals['sat']) / 100
+    const lum = Number((defBultColorVals['lum'].indexOf('%') !== -1) ? defBultColorVals['lum'].split('%').shift() : defBultColorVals['lum']) / 100
+    const hsl2rgb = hslToRgb(hue, sat, lum)
+    color = toHex(hsl2rgb.r) + toHex(hsl2rgb.g) + toHex(hsl2rgb.b)
+  } 
+  else if (solidFill['a:sysClr']) {
+    clrNode = solidFill['a:sysClr']
+    const sysClr = getTextByPathList(clrNode, ['attrs', 'lastClr'])
+    if (sysClr) color = sysClr
+  }
+
+  let isAlpha = false
+  const alpha = parseInt(getTextByPathList(clrNode, ['a:alpha', 'attrs', 'val'])) / 100000
+  if (!isNaN(alpha)) {
+    const al_color = tinycolor(color)
+    al_color.setAlpha(alpha)
+    color = al_color.toHex8()
+    isAlpha = true
+  }
+
+  const hueMod = parseInt(getTextByPathList(clrNode, ['a:hueMod', 'attrs', 'val'])) / 100000
+  if (!isNaN(hueMod)) {
+    color = applyHueMod(color, hueMod, isAlpha)
+  }
+  const lumMod = parseInt(getTextByPathList(clrNode, ['a:lumMod', 'attrs', 'val'])) / 100000
+  if (!isNaN(lumMod)) {
+    color = applyLumMod(color, lumMod, isAlpha)
+  }
+  const lumOff = parseInt(getTextByPathList(clrNode, ['a:lumOff', 'attrs', 'val'])) / 100000
+  if (!isNaN(lumOff)) {
+    color = applyLumOff(color, lumOff, isAlpha)
+  }
+  const satMod = parseInt(getTextByPathList(clrNode, ['a:satMod', 'attrs', 'val'])) / 100000
+  if (!isNaN(satMod)) {
+    color = applySatMod(color, satMod, isAlpha)
+  }
+  const shade = parseInt(getTextByPathList(clrNode, ['a:shade', 'attrs', 'val'])) / 100000
+  if (!isNaN(shade)) {
+    color = applyShade(color, shade, isAlpha)
+  }
+  const tint = parseInt(getTextByPathList(clrNode, ['a:tint', 'attrs', 'val'])) / 100000
+  if (!isNaN(tint)) {
+    color = applyTint(color, tint, isAlpha)
   }
 
   return color

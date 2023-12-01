@@ -1,5 +1,5 @@
 import { getTextByPathList } from './utils'
-import { getSolidFill } from './fill'
+import { getShadow } from './shadow'
 
 export function getFontType(node, type, warpObj) {
   let typeface = getTextByPathList(node, ['a:rPr', 'a:latin', 'attrs', 'typeface'])
@@ -93,15 +93,12 @@ export function getFontSubscript(node) {
 export function getFontShadow(node, warpObj, slideFactor) {
   const txtShadow = getTextByPathList(node, ['a:rPr', 'a:effectLst', 'a:outerShdw'])
   if (txtShadow) {
-    const shadowClr = getSolidFill(txtShadow, undefined, undefined, warpObj)
-    const outerShdwAttrs = txtShadow['attrs']
-    const dir = (outerShdwAttrs['dir']) ? (parseInt(outerShdwAttrs['dir']) / 60000) : 0
-    const dist = parseInt(outerShdwAttrs['dist']) * slideFactor
-    const blurRad = (outerShdwAttrs['blurRad']) ? (parseInt(outerShdwAttrs['blurRad']) * slideFactor + 'px') : ''
-    const vx = dist * Math.sin(dir * Math.PI / 180)
-    const hx = dist * Math.cos(dir * Math.PI / 180)
-    if (!isNaN(vx) && !isNaN(hx)) {
-      return hx + 'px ' + vx + 'px ' + blurRad + ' #' + shadowClr
+    const shadow = getShadow(txtShadow, warpObj, slideFactor)
+    if (shadow) {
+      const { h, v, blur, color } = shadow
+      if (!isNaN(v) && !isNaN(h)) {
+        return h + 'px ' + v + 'px ' + (blur ? blur + 'px' : '') + ' ' + color
+      }
     }
   }
   return ''
