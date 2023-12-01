@@ -469,7 +469,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
   else txtRotate = rotate
 
   let content = ''
-  if (node['p:txBody']) content = genTextBody(node['p:txBody'], slideLayoutSpNode, slideMasterSpNode, type, warpObj, FONTSIZE_FACTOR)
+  if (node['p:txBody']) content = genTextBody(node['p:txBody'], slideLayoutSpNode, slideMasterSpNode, type, warpObj, FONTSIZE_FACTOR, SLIDE_FACTOR)
 
   const { borderColor, borderWidth, borderType, strokeDasharray } = getBorder(node, type, warpObj)
   const fillColor = getShapeFill(node, undefined, warpObj) || ''
@@ -676,7 +676,7 @@ function genTable(node, warpObj) {
 
       if (tcNodes.constructor === Array) {
         for (const tcNode of tcNodes) {
-          const text = genTextBody(tcNode['a:txBody'], undefined, undefined, undefined, warpObj, FONTSIZE_FACTOR)
+          const text = genTextBody(tcNode['a:txBody'], undefined, undefined, undefined, warpObj, FONTSIZE_FACTOR, SLIDE_FACTOR)
           const rowSpan = getTextByPathList(tcNode, ['attrs', 'rowSpan'])
           const colSpan = getTextByPathList(tcNode, ['attrs', 'gridSpan'])
           const vMerge = getTextByPathList(tcNode, ['attrs', 'vMerge'])
@@ -686,7 +686,7 @@ function genTable(node, warpObj) {
         }
       } 
       else {
-        const text = genTextBody(tcNodes['a:txBody'], undefined, undefined, undefined, warpObj, FONTSIZE_FACTOR)
+        const text = genTextBody(tcNodes['a:txBody'], undefined, undefined, undefined, warpObj, FONTSIZE_FACTOR, SLIDE_FACTOR)
         tr.push({ text })
       }
       data.push(tr)
@@ -698,12 +698,12 @@ function genTable(node, warpObj) {
 
     if (tcNodes.constructor === Array) {
       for (const tcNode of tcNodes) {
-        const text = genTextBody(tcNode['a:txBody'], undefined, undefined, undefined, warpObj, FONTSIZE_FACTOR)
+        const text = genTextBody(tcNode['a:txBody'], undefined, undefined, undefined, warpObj, FONTSIZE_FACTOR, SLIDE_FACTOR)
         tr.push({ text })
       }
     } 
     else {
-      const text = genTextBody(tcNodes['a:txBody'], undefined, undefined, undefined, warpObj, FONTSIZE_FACTOR)
+      const text = genTextBody(tcNodes['a:txBody'], undefined, undefined, undefined, warpObj, FONTSIZE_FACTOR, SLIDE_FACTOR)
       tr.push({ text })
     }
     data.push(tr)

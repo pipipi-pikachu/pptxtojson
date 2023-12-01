@@ -1,4 +1,5 @@
 import { getTextByPathList } from './utils'
+import { getSolidFill } from './fill'
 
 export function getFontType(node, type, warpObj) {
   let typeface = getTextByPathList(node, ['a:rPr', 'a:latin', 'attrs', 'typeface'])
@@ -61,13 +62,47 @@ export function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles
 }
 
 export function getFontBold(node) {
-  return (node['a:rPr'] && node['a:rPr']['attrs']['b'] === '1') ? 'bold' : ''
+  return getTextByPathList(node, ['a:rPr', 'attrs', 'b']) === '1' ? 'bold' : ''
 }
 
 export function getFontItalic(node) {
-  return (node['a:rPr'] && node['a:rPr']['attrs']['i'] === '1') ? 'italic' : ''
+  return getTextByPathList(node, ['a:rPr', 'attrs', 'i']) === '1' ? 'italic' : ''
 }
 
 export function getFontDecoration(node) {
-  return (node['a:rPr'] && node['a:rPr']['attrs']['u'] === 'sng') ? 'underline' : ''
+  const underline = getTextByPathList(node, ['a:rPr', 'attrs', 'u']) === 'sng' ? 'underline' : ''
+  const strike = getTextByPathList(node, ['a:rPr', 'attrs', 'strike']) === 'sngStrike' ? 'line-through' : ''
+
+  if (!underline && !strike) return ''
+  else if (underline && !strike) return underline
+  else if (!underline && strike) return strike
+  return `${underline} ${strike}`
+}
+
+export function getFontSpace(node, fontsizeFactor) {
+  const spc = getTextByPathList(node, ['a:rPr', 'attrs', 'spc'])
+  return spc ? (parseInt(spc) / 100 * fontsizeFactor + 'px') : ''
+}
+
+export function getFontSubscript(node) {
+  const baseline = getTextByPathList(node, ['a:rPr', 'attrs', 'baseline'])
+  if (!baseline) return ''
+  return parseInt(baseline) > 0 ? 'super' : 'sub'
+}
+
+export function getFontShadow(node, warpObj, slideFactor) {
+  const txtShadow = getTextByPathList(node, ['a:rPr', 'a:effectLst', 'a:outerShdw'])
+  if (txtShadow) {
+    const shadowClr = getSolidFill(txtShadow, undefined, undefined, warpObj)
+    const outerShdwAttrs = txtShadow['attrs']
+    const dir = (outerShdwAttrs['dir']) ? (parseInt(outerShdwAttrs['dir']) / 60000) : 0
+    const dist = parseInt(outerShdwAttrs['dist']) * slideFactor
+    const blurRad = (outerShdwAttrs['blurRad']) ? (parseInt(outerShdwAttrs['blurRad']) * slideFactor + 'px') : ''
+    const vx = dist * Math.sin(dir * Math.PI / 180)
+    const hx = dist * Math.cos(dir * Math.PI / 180)
+    if (!isNaN(vx) && !isNaN(hx)) {
+      return hx + 'px ' + vx + 'px ' + blurRad + ' #' + shadowClr
+    }
+  }
+  return ''
 }

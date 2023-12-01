@@ -8,9 +8,12 @@ import {
   getFontBold,
   getFontItalic,
   getFontDecoration,
+  getFontSpace,
+  getFontSubscript,
+  getFontShadow,
 } from './fontStyle'
 
-export function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, warpObj, fontsizeFactor) {
+export function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, warpObj, fontsizeFactor, slideFactor) {
   if (!textBodyNode) return ''
 
   let text = ''
@@ -68,10 +71,10 @@ export function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, 
       text += `<p style="text-align: ${align};">`
     }
     
-    if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj, fontsizeFactor)
+    if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj, fontsizeFactor, slideFactor)
     else {
       for (const rNodeItem of rNode) {
-        text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj, fontsizeFactor)
+        text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj, fontsizeFactor, slideFactor)
       }
     }
 
@@ -91,7 +94,7 @@ export function getListType(node) {
   return ''
 }
 
-export function genSpanElement(node, slideLayoutSpNode, type, warpObj, fontsizeFactor) {
+export function genSpanElement(node, slideLayoutSpNode, type, warpObj, fontsizeFactor, slideFactor) {
   const slideMasterTextStyles = warpObj['slideMasterTextStyles']
 
   let text = node['a:t']
@@ -105,12 +108,19 @@ export function genSpanElement(node, slideLayoutSpNode, type, warpObj, fontsizeF
   const fontBold = getFontBold(node)
   const fontItalic = getFontItalic(node)
   const fontDecoration = getFontDecoration(node)
+  const fontSpace = getFontSpace(node, fontsizeFactor)
+  const shadow = getFontShadow(node, warpObj, slideFactor)
+  const subscript = getFontSubscript(node)
+
   if (fontColor) styleText += `color: ${fontColor};`
   if (fontSize) styleText += `font-size: ${fontSize};`
   if (fontType) styleText += `font-family: ${fontType};`
   if (fontBold) styleText += `font-weight: ${fontBold};`
   if (fontItalic) styleText += `font-style: ${fontItalic};`
   if (fontDecoration) styleText += `text-decoration: ${fontDecoration};`
+  if (fontSpace) styleText += `letter-spacing: ${fontSpace};`
+  if (subscript) styleText += `vertical-align: ${subscript}; font-size: smaller;`
+  if (shadow) styleText += `text-shadow: ${shadow};`
 
   const linkID = getTextByPathList(node, ['a:rPr', 'a:hlinkClick', 'attrs', 'r:id'])
   if (linkID) {
