@@ -1,12 +1,14 @@
 import * as txml from 'txml/dist/txml.mjs'
 
+let cust_attr_order = 0
+
 export function simplifyLostLess(children, parentAttributes = {}) {
   const out = {}
   if (!children.length) return out
 
   if (children.length === 1 && typeof children[0] === 'string') {
     return Object.keys(parentAttributes).length ? {
-      attrs: parentAttributes,
+      attrs: { order: cust_attr_order++, ...parentAttributes },
       value: children[0],
     } : children[0]
   }
@@ -20,7 +22,7 @@ export function simplifyLostLess(children, parentAttributes = {}) {
     out[child.tagName].push(kids)
 
     if (Object.keys(child.attributes).length) {
-      kids.attrs = child.attributes
+      kids.attrs = { order: cust_attr_order++, ...child.attributes }
     }
   }
   for (const child in out) {

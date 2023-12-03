@@ -57,11 +57,12 @@ export function getCustomShapePath(custShapType, w, h) {
           const moveToNoPt = moveToPtNode[key]
           const spX = moveToNoPt['attrs', 'x']
           const spY = moveToNoPt['attrs', 'y']
-          
+          const order = moveToNoPt['attrs', 'order']
           multiSapeAry.push({
             type: 'movto',
             x: spX,
             y: spY,
+            order,
           })
         })
       }
@@ -74,10 +75,12 @@ export function getCustomShapePath(custShapType, w, h) {
             const lnToNoPt = lnToPtNode[key]
             const ptX = lnToNoPt['attrs', 'x']
             const ptY = lnToNoPt['attrs', 'y']
+            const order = lnToNoPt['attrs', 'order']
             multiSapeAry.push({
               type: 'lnto',
               x: ptX,
               y: ptY,
+              order,
             })
           })
         }
@@ -101,14 +104,17 @@ export function getCustomShapePath(custShapType, w, h) {
           }
           pts_ary.push(pt_obj)
         })
+        const order = key[0]['attrs']['order']
         multiSapeAry.push({
           type: 'cubicBezTo',
-          cubBzPt: pts_ary
+          cubBzPt: pts_ary,
+          order,
         })
       })
     }
     if (arcToNodes) {
       const arcToNodesAttrs = arcToNodes['attrs']
+      const order = arcToNodesAttrs['order']
       const hR = arcToNodesAttrs['hR']
       const wR = arcToNodesAttrs['wR']
       const stAng = arcToNodesAttrs['stAng']
@@ -128,6 +134,7 @@ export function getCustomShapePath(custShapType, w, h) {
         swAng: swAng,
         shftX: shftX,
         shftY: shftY,
+        order,
       })
     }
     if (closeNode) {
@@ -135,13 +142,15 @@ export function getCustomShapePath(custShapType, w, h) {
       Object.keys(closeNode).forEach(() => {
         multiSapeAry.push({
           type: 'close',
+          order: Infinity,
         })
       })
     }
 
+    multiSapeAry.sort((a, b) => a.order - b.order)
+
     let k = 0
     while (k < multiSapeAry.length) {
-
       if (multiSapeAry[k].type === 'movto') {
         const spX = parseInt(multiSapeAry[k].x) * cX
         const spY = parseInt(multiSapeAry[k].y) * cY
