@@ -32,6 +32,25 @@ document.querySelector('input').addEventListener('change', evt => {
 })
 ```
 
+```json
+// 输出示例
+{
+	"slides": {
+		"fill": {
+			"type": "color",
+			"value": "#FF0000"
+		},
+		"elements": [
+			// element data list
+		],
+	},
+	"size": {
+		"width": 1280,
+		"height": 720
+	}
+}
+```
+
 # 📕 功能支持
 
 ### 幻灯片尺寸
