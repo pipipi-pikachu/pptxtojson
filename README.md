@@ -32,7 +32,7 @@ document.querySelector('input').addEventListener('change', evt => {
 })
 ```
 
-```json
+```js
 // 输出示例
 {
 	"slides": {
