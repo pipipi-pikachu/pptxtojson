@@ -70,13 +70,11 @@ export function getFontItalic(node) {
 }
 
 export function getFontDecoration(node) {
-  const underline = getTextByPathList(node, ['a:rPr', 'attrs', 'u']) === 'sng' ? 'underline' : ''
-  const strike = getTextByPathList(node, ['a:rPr', 'attrs', 'strike']) === 'sngStrike' ? 'line-through' : ''
+  return getTextByPathList(node, ['a:rPr', 'attrs', 'u']) === 'sng' ? 'underline' : ''
+}
 
-  if (!underline && !strike) return ''
-  else if (underline && !strike) return underline
-  else if (!underline && strike) return strike
-  return `${underline} ${strike}`
+export function getFontDecorationLine(node) {
+  return getTextByPathList(node, ['a:rPr', 'attrs', 'strike']) === 'sngStrike' ? 'line-through' : ''
 }
 
 export function getFontSpace(node, fontsizeFactor) {

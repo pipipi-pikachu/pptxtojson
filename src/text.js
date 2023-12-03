@@ -8,6 +8,7 @@ import {
   getFontBold,
   getFontItalic,
   getFontDecoration,
+  getFontDecorationLine,
   getFontSpace,
   getFontSubscript,
   getFontShadow,
@@ -108,6 +109,7 @@ export function genSpanElement(node, slideLayoutSpNode, type, warpObj, fontsizeF
   const fontBold = getFontBold(node)
   const fontItalic = getFontItalic(node)
   const fontDecoration = getFontDecoration(node)
+  const fontDecorationLine = getFontDecorationLine(node)
   const fontSpace = getFontSpace(node, fontsizeFactor)
   const shadow = getFontShadow(node, warpObj, slideFactor)
   const subscript = getFontSubscript(node)
@@ -118,6 +120,7 @@ export function genSpanElement(node, slideLayoutSpNode, type, warpObj, fontsizeF
   if (fontBold) styleText += `font-weight: ${fontBold};`
   if (fontItalic) styleText += `font-style: ${fontItalic};`
   if (fontDecoration) styleText += `text-decoration: ${fontDecoration};`
+  if (fontDecorationLine) styleText += `text-decoration-line: ${fontDecorationLine};`
   if (fontSpace) styleText += `letter-spacing: ${fontSpace};`
   if (subscript) styleText += `vertical-align: ${subscript}; font-size: smaller;`
   if (shadow) styleText += `text-shadow: ${shadow};`

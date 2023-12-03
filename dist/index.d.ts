@@ -128,7 +128,7 @@ export interface ScatterChart {
   width: number
   height: number
   data: ScatterChartData,
-  chartType: 'scatterChart'
+  chartType: 'scatterChart' | 'bubbleChart'
 }
 export type Chart = CommonChart | ScatterChart
 
