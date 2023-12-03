@@ -114,7 +114,7 @@ export interface CommonChart {
   width: number
   height: number
   data: ChartItem[]
-  chartType: ChartType
+  chartType: Exclude<ChartType, 'scatterChart' | 'bubbleChart'>
   barDir?: 'bar' | 'col'
   marker?: boolean
   holeSize?: string
