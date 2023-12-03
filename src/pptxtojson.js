@@ -1,7 +1,7 @@
 import JSZip from 'jszip'
 import { readXmlFile } from './readXmlFile'
 import { getBorder } from './border'
-import { getSlideBackgroundFill, getShapeFill } from './fill'
+import { getSlideBackgroundFill, getShapeFill, getSolidFill } from './fill'
 import { getChartInfo } from './chart'
 import { getVerticalAlign } from './align'
 import { getPosition, getSize } from './position'
@@ -252,6 +252,8 @@ async function processSingleSlide(zip, sldFileName, themeContent, defaultTextSty
     }
   }
 
+  const tableStyles = await readXmlFile(zip, 'ppt/tableStyles.xml')
+
   const slideContent = await readXmlFile(zip, sldFileName)
   const nodes = slideContent['p:sld']['p:cSld']['p:spTree']
   const warpObj = {
@@ -261,6 +263,7 @@ async function processSingleSlide(zip, sldFileName, themeContent, defaultTextSty
     slideMasterContent: slideMasterContent,
     slideMasterTables: slideMasterTables,
     slideContent: slideContent,
+    tableStyles: tableStyles,
     slideResObj: slideResObj,
     slideMasterTextStyles: slideMasterTextStyles,
     layoutResObj: layoutResObj,
@@ -673,6 +676,39 @@ function genTable(node, warpObj) {
   const { top, left } = getPosition(xfrmNode, undefined, undefined, SLIDE_FACTOR)
   const { width, height } = getSize(xfrmNode, undefined, undefined, SLIDE_FACTOR)
 
+  const getTblPr = getTextByPathList(node, ['a:graphic', 'a:graphicData', 'a:tbl', 'a:tblPr'])
+
+  let thisTblStyle
+  const tbleStyleId = getTblPr['a:tableStyleId']
+  if (tbleStyleId) {
+    const tbleStylList = warpObj['tableStyles']['a:tblStyleLst']['a:tblStyle']
+    if (tbleStylList) {
+      if (tbleStylList.constructor === Array) {
+        for (let k = 0; k < tbleStylList.length; k++) {
+          if (tbleStylList[k]['attrs']['styleId'] === tbleStyleId) {
+            thisTblStyle = tbleStylList[k]
+          }
+        }
+      } 
+      else {
+        if (tbleStylList['attrs']['styleId'] === tbleStyleId) {
+          thisTblStyle = tbleStylList
+        }
+      }
+    }
+  }
+
+  let themeColor = ''
+  let tbl_bgFillschemeClr = getTextByPathList(thisTblStyle, ['a:tblBg', 'a:fillRef'])
+  if (tbl_bgFillschemeClr) {
+    themeColor = getSolidFill(tbl_bgFillschemeClr, undefined, undefined, warpObj)
+  }
+  if (tbl_bgFillschemeClr === undefined) {
+    tbl_bgFillschemeClr = getTextByPathList(thisTblStyle, ['a:wholeTbl', 'a:tcStyle', 'a:fill', 'a:solidFill'])
+    themeColor = getSolidFill(tbl_bgFillschemeClr, undefined, undefined, warpObj)
+  }
+  if (themeColor !== '') themeColor = '#' + themeColor
+
   const trNodes = tableNode['a:tr']
   
   const data = []
@@ -723,6 +759,7 @@ function genTable(node, warpObj) {
     width,
     height,
     data,
+    themeColor,
   }
 }
 
