@@ -1,6 +1,6 @@
 {
 	"name": "pptxtojson",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "A javascript tool for parsing .pptx file",
 	"type": "module",
 	"main": "./dist/index.umd.js",
