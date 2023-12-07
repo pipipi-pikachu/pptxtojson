@@ -85,8 +85,7 @@ document.querySelector('input').addEventListener('change', evt => {
 | isFlipH                | boolean                        | 水平翻转          
 | rotate                 | number                         | 旋转角度          
 | vAlign                 | string                         | 垂直对齐方向        
-| isVertical             | boolean                        | 是否为竖向文本      
-| id                     | string                         | ID            
+| isVertical             | boolean                        | 是否为竖向文本        
 | name                   | string                         | 元素名  
 
 #### 图片
@@ -120,8 +119,7 @@ document.querySelector('input').addEventListener('change', evt => {
 | rotate                 | number                         | 旋转角度          
 | shapType               | string                         | 形状类型          
 | vAlign                 | string                         | 垂直对齐方向        
-| path                   | string                         | 路径（仅自定义形状存在）  
-| id                     | string                         | ID            
+| path                   | string                         | 路径（仅自定义形状存在）         
 | name                   | string                         | 元素名   
 
 #### 表格
@@ -180,7 +178,7 @@ document.querySelector('input').addEventListener('change', evt => {
 | top                    | number                         | 垂直坐标          
 | width                  | number                         | 宽度            
 | height                 | number                         | 高度            
-| elements               | (Shape | Text)[]               | 子元素集合  
+| elements               | (Shape 丨 Text)[]               | 子元素集合  
 
 #### 多元素组合
 | prop                   | type                           | 描述            

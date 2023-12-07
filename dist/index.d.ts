@@ -11,8 +11,6 @@ export interface Shape {
   top: number
   width: number
   height: number
-  cx: number
-  cy: number
   borderColor: string
   borderWidth: number
   borderType: 'solid' | 'dashed' | 'dotted'
@@ -26,7 +24,6 @@ export interface Shape {
   shapType: string
   vAlign: string
   path?: string
-  id: string
   name: string
 }
 
@@ -48,7 +45,6 @@ export interface Text {
   rotate: number
   content: string
   vAlign: string
-  id: string
   name: string
 }
 

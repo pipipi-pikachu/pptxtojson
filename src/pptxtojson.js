@@ -447,7 +447,6 @@ async function processGroupSpNode(node, warpObj, source) {
 }
 
 function processSpNode(node, warpObj, source) {
-  const id = getTextByPathList(node, ['p:nvSpPr', 'p:cNvPr', 'attrs', 'id'])
   const name = getTextByPathList(node, ['p:nvSpPr', 'p:cNvPr', 'attrs', 'name'])
   const idx = getTextByPathList(node, ['p:nvSpPr', 'p:nvPr', 'p:ph', 'attrs', 'idx'])
   let type = getTextByPathList(node, ['p:nvSpPr', 'p:nvPr', 'p:ph', 'attrs', 'type'])
@@ -481,19 +480,17 @@ function processSpNode(node, warpObj, source) {
     else type = 'obj'
   }
 
-  return genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, type, warpObj)
+  return genShape(node, slideLayoutSpNode, slideMasterSpNode, name, type, warpObj)
 }
 
 function processCxnSpNode(node, warpObj) {
-  const id = node['p:nvCxnSpPr']['p:cNvPr']['attrs']['id']
   const name = node['p:nvCxnSpPr']['p:cNvPr']['attrs']['name']
-  const idx = (node['p:nvCxnSpPr']['p:nvPr']['p:ph'] === undefined) ? undefined : node['p:nvSpPr']['p:nvPr']['p:ph']['attrs']['idx']
   const type = (node['p:nvCxnSpPr']['p:nvPr']['p:ph'] === undefined) ? undefined : node['p:nvSpPr']['p:nvPr']['p:ph']['attrs']['type']
 
-  return genShape(node, undefined, undefined, id, name, idx, type, warpObj)
+  return genShape(node, undefined, undefined, name, type, warpObj)
 }
 
-function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, type, warpObj) {
+function genShape(node, slideLayoutSpNode, slideMasterSpNode, name, type, warpObj) {
   const xfrmList = ['p:spPr', 'a:xfrm']
   const slideXfrmNode = getTextByPathList(node, xfrmList)
   const slideLayoutXfrmNode = getTextByPathList(slideLayoutSpNode, xfrmList)
@@ -546,17 +543,13 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
     isFlipH,
     rotate,
     vAlign,
-    id,
     name,
-    idx,
   }
 
   if (shadow) data.shadow = shadow
 
   if (custShapType && type !== 'diagram') {
     const ext = getTextByPathList(slideXfrmNode, ['a:ext', 'attrs'])
-    const cx = parseInt(ext['cx']) * SLIDE_FACTOR
-    const cy = parseInt(ext['cy']) * SLIDE_FACTOR
     const w = parseInt(ext['cx']) * SLIDE_FACTOR
     const h = parseInt(ext['cy']) * SLIDE_FACTOR
     const d = getCustomShapePath(custShapType, w, h)
@@ -564,22 +557,14 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, id, name, idx, typ
     return {
       ...data,
       type: 'shape',
-      cx,
-      cy,
       shapType: 'custom',
       path: d,
     }
   }
   if (shapType && type !== 'text') {
-    const ext = getTextByPathList(slideXfrmNode, ['a:ext', 'attrs'])
-    const cx = parseInt(ext['cx']) * SLIDE_FACTOR
-    const cy = parseInt(ext['cy']) * SLIDE_FACTOR
-
     return {
       ...data,
       type: 'shape',
-      cx,
-      cy,
       shapType,
     }
   }
