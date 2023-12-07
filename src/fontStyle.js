@@ -58,7 +58,7 @@ export function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles
 
   fontSize = (isNaN(fontSize) || !fontSize) ? 18 : fontSize
 
-  return fontSize * fontsizeFactor + 'px'
+  return parseFloat((fontSize * fontsizeFactor).toFixed(2)) + 'px'
 }
 
 export function getFontBold(node) {

@@ -8,8 +8,8 @@ export function getPosition(slideSpNode, slideLayoutSpNode, slideMasterSpNode, f
   if (!off) return { top: 0, left: 0 }
 
   return {
-    top: parseInt(off['y']) * factor,
-    left: parseInt(off['x']) * factor,
+    top: parseFloat((parseInt(off['y']) * factor).toFixed(2)),
+    left: parseFloat((parseInt(off['x']) * factor).toFixed(2)),
   }
 }
 
@@ -23,7 +23,7 @@ export function getSize(slideSpNode, slideLayoutSpNode, slideMasterSpNode, facto
   if (!ext) return { width: 0, height: 0 }
 
   return {
-    width: parseInt(ext['cx']) * factor,
-    height: parseInt(ext['cy']) * factor,
+    width: parseFloat((parseInt(ext['cx']) * factor).toFixed(2)),
+    height: parseFloat((parseInt(ext['cy']) * factor).toFixed(2)),
   }
 }

@@ -5,13 +5,13 @@ export function getShadow(node, warpObj, slideFactor) {
   const outerShdwAttrs = node['attrs']
   const dir = (outerShdwAttrs['dir']) ? (parseInt(outerShdwAttrs['dir']) / 60000) : 0
   const dist = parseInt(outerShdwAttrs['dist']) * slideFactor
-  const blurRad = outerShdwAttrs['blurRad'] ? (parseInt(outerShdwAttrs['blurRad']) * slideFactor) : ''
+  const blurRad = outerShdwAttrs['blurRad'] ? parseFloat((parseInt(outerShdwAttrs['blurRad']) * slideFactor).toFixed(2)) : ''
   const vx = dist * Math.sin(dir * Math.PI / 180)
   const hx = dist * Math.cos(dir * Math.PI / 180)
 
   return {
-    h: hx,
-    v: vx,
+    h: parseFloat(hx.toFixed(2)),
+    v: parseFloat(vx.toFixed(2)),
     blur: blurRad,
     color: '#' + chdwClrNode,
   }
