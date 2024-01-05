@@ -244,7 +244,7 @@ export function getShapeFill(node, isSvgMode, warpObj) {
     if (isNaN(lumOff)) lumOff = 0
 
     const color = tinycolor(fillColor).toHsl()
-    const lum = color.l * (1 + lumOff)
+    const lum = color.l * lumMod + lumOff
     return tinycolor({ h: color.h, s: color.s, l: lum, a: color.a }).toHexString()
   } 
 
@@ -264,6 +264,15 @@ export function getSolidFill(solidFill, clrMap, phClr, warpObj) {
   else if (solidFill['a:schemeClr']) {
     const schemeClr = 'a:' + getTextByPathList(solidFill['a:schemeClr'], ['attrs', 'val'])
     color = getSchemeColorFromTheme(schemeClr, warpObj)
+    
+    let lumMod = parseInt(getTextByPathList(solidFill, ['a:schemeClr', 'a:lumMod', 'attrs', 'val'])) / 100000
+    let lumOff = parseInt(getTextByPathList(solidFill, ['a:schemeClr', 'a:lumOff', 'attrs', 'val'])) / 100000
+    if (isNaN(lumMod)) lumMod = 1.0
+    if (isNaN(lumOff)) lumOff = 0
+
+    color = tinycolor(color).toHsl()
+    const lum = color.l * lumMod + lumOff
+    return tinycolor({ h: color.h, s: color.s, l: lum, a: color.a }).toHex()
   }
   else if (solidFill['a:scrgbClr']) {
     clrNode = solidFill['a:scrgbClr']
