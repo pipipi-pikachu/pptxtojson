@@ -415,12 +415,17 @@ async function processGroupSpNode(node, warpObj, source) {
 
   const x = parseInt(xfrmNode['a:off']['attrs']['x']) * SLIDE_FACTOR
   const y = parseInt(xfrmNode['a:off']['attrs']['y']) * SLIDE_FACTOR
+  // https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.drawing.childoffset?view=openxml-2.8.1
   const chx = parseInt(xfrmNode['a:chOff']['attrs']['x']) * SLIDE_FACTOR
   const chy = parseInt(xfrmNode['a:chOff']['attrs']['y']) * SLIDE_FACTOR
   const cx = parseInt(xfrmNode['a:ext']['attrs']['cx']) * SLIDE_FACTOR
   const cy = parseInt(xfrmNode['a:ext']['attrs']['cy']) * SLIDE_FACTOR
+  // https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.drawing.childextents?view=openxml-2.8.1
   const chcx = parseInt(xfrmNode['a:chExt']['attrs']['cx']) * SLIDE_FACTOR
   const chcy = parseInt(xfrmNode['a:chExt']['attrs']['cy']) * SLIDE_FACTOR
+  // children coordinate
+  const ws = cx / chcx
+  const hs = cy / chcy
 
   const elements = []
   for (const nodeKey in node) {
@@ -438,11 +443,17 @@ async function processGroupSpNode(node, warpObj, source) {
 
   return {
     type: 'group',
-    top: y - chy,
-    left: x - chx,
-    width: cx - chcx,
-    height: cy - chcy,
-    elements,
+    top: parseFloat(y.toFixed(2)),
+    left: parseFloat(x.toFixed(2)),
+    width: parseFloat(cx.toFixed(2)),
+    height: parseFloat(cy.toFixed(2)),
+    elements: elements.map(element => ({
+      ...element,
+      left: parseFloat(((element.left - chx) * ws).toFixed(2)),
+      top: parseFloat(((element.top - chy) * hs).toFixed(2)),
+      width: parseFloat((element.width * ws).toFixed(2)),
+      height: parseFloat((element.height * hs).toFixed(2)),
+    }))
   }
 }
 
@@ -594,6 +605,9 @@ async function processPicNode(node, warpObj, source) {
   const { width, height } = getSize(xfrmNode, undefined, undefined, SLIDE_FACTOR)
   const src = `data:${mimeType};base64,${base64ArrayBuffer(imgArrayBuffer)}`
 
+  const isFlipV = getTextByPathList(xfrmNode, ['attrs', 'flipV']) === '1'
+  const isFlipH = getTextByPathList(xfrmNode, ['attrs', 'flipH']) === '1'
+
   let rotate = 0
   const rotateNode = getTextByPathList(node, ['p:spPr', 'a:xfrm', 'attrs', 'rot'])
   if (rotateNode) rotate = angleToDegrees(rotateNode)
@@ -674,6 +688,8 @@ async function processPicNode(node, warpObj, source) {
     height,
     rotate,
     src,
+    isFlipV,
+    isFlipH
   }
 }
 
