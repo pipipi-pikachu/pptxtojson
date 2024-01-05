@@ -10,7 +10,7 @@ import { getCustomShapePath } from './shape'
 import { extractFileExtension, base64ArrayBuffer, getTextByPathList, angleToDegrees, getMimeType, isVideoLink, escapeHtml } from './utils'
 import { getShadow } from './shadow'
 
-let SLIDE_FACTOR = 72 / 914400
+let SLIDE_FACTOR = 96 / 914400
 let FONTSIZE_FACTOR = 100 / 75
 
 const defaultOptions = {
@@ -443,16 +443,16 @@ async function processGroupSpNode(node, warpObj, source) {
 
   return {
     type: 'group',
-    top: y,
-    left: x,
-    width: cx,
-    height: cy,
+    top: parseFloat(y.toFixed(2)),
+    left: parseFloat(x.toFixed(2)),
+    width: parseFloat(cx.toFixed(2)),
+    height: parseFloat(cy.toFixed(2)),
     elements: elements.map(element => ({
       ...element,
-      left: (element.left - chx) * ws,
-      top: (element.top - chy) * hs,
-      width: element.width * ws,
-      height: element.height * hs
+      left: parseFloat(((element.left - chx) * ws).toFixed(2)),
+      top: parseFloat(((element.top - chy) * hs).toFixed(2)),
+      width: parseFloat((element.width * ws).toFixed(2)),
+      height: parseFloat((element.height * hs).toFixed(2)),
     }))
   }
 }
