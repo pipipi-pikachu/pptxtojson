@@ -1,11 +1,13 @@
 # 🎨 PPTX2JSON
-这是一个可以将PPT幻灯片(.pptx)文件解析为 JSON 数据的库。
+这是一个可以将 .pptx 文件转为可读的 json 数据的 JavaScript 库。
 
 在线DEMO：https://pipipi-pikachu.github.io/pptx2json/
 
 
 # 🔨安装
-> npm install pptxtojson
+```
+npm install pptxtojson
+```
 
 # 💿用法
 ```html
@@ -197,4 +199,4 @@ document.querySelector('input').addEventListener('change', evt => {
 > 本仓库主要参考了 [PPTX2HTML](https://github.com/g21589/PPTX2HTML) 、[PPTXjs](https://github.com/meshesha/PPTXjs) 的实现
 
 # 📄 开源协议
-AGPL-3.0 License | Copyright © 2020-PRESENT [pipipi-pikachu](https://github.com/pipipi-pikachu)
+MIT License | Copyright © 2020-PRESENT [pipipi-pikachu](https://github.com/pipipi-pikachu)
