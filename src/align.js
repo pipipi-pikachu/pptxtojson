@@ -10,10 +10,10 @@ export function getHorizontalAlign(node, slideLayoutSpNode, slideMasterSpNode, t
       case 'title':
       case 'subTitle':
       case 'ctrTitle':
-        algn = getTextByPathList(slideMasterTextStyles, ['p:titleStyle', 'a:lvl1pPr', 'attrs', 'algn'])
+        algn = getTextByPathList(slideMasterTextStyles, ['p:titleStyle', 'a:lvl1pPr', 'attrs', 'alng'])
         break
       default:
-        algn = getTextByPathList(slideMasterTextStyles, ['p:otherStyle', 'a:lvl1pPr', 'attrs', 'algn'])
+        algn = getTextByPathList(slideMasterTextStyles, ['p:otherStyle', 'a:lvl1pPr', 'attrs', 'alng'])
     }
   }
   if (!algn) {
