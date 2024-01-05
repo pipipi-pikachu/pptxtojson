@@ -60,6 +60,8 @@ export interface Image {
   height: number
   src: string
   rotate: number
+  isFlipH: boolean
+  isFlipV: boolean
 }
 
 export interface TableCell {
