@@ -14,11 +14,10 @@ import {
   getFontShadow,
 } from './fontStyle'
 
-export function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, warpObj, fontsizeFactor, slideFactor) {
+export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, type, warpObj, fontsizeFactor, slideFactor) {
   if (!textBodyNode) return ''
 
   let text = ''
-  const slideMasterTextStyles = warpObj['slideMasterTextStyles']
 
   const pNode = textBodyNode['a:p']
   const pNodes = pNode.constructor === Array ? pNode : [pNode]
@@ -49,7 +48,7 @@ export function genTextBody(textBodyNode, slideLayoutSpNode, slideMasterSpNode, 
       }
     }
 
-    const align = getHorizontalAlign(pNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles)
+    const align = getHorizontalAlign(pNode, spNode, type, warpObj)
 
     const listType = getListType(pNode)
     if (listType) {

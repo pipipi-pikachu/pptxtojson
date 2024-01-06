@@ -12,7 +12,7 @@
 		"lint": "eslint src --ext .js,.jsx,.ts,.tsx"
 	},
 	"author": "",
-	"license": "AGPL-3.0",
+	"license": "MIT",
 	"publishConfig": {
 		"registry": "https://registry.npmjs.com/"
 	},
