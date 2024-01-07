@@ -127,7 +127,7 @@ export function genSpanElement(node, slideLayoutSpNode, type, warpObj) {
   const linkID = getTextByPathList(node, ['a:rPr', 'a:hlinkClick', 'attrs', 'r:id'])
   if (linkID) {
     const linkURL = warpObj['slideResObj'][linkID]['target']
-    return `<span style="${styleText}"><a href="${linkURL}" target="_blank">${text.replace(/\s/i, '&nbsp;')}</a></span>`
+    return `<span style="${styleText}"><a href="${linkURL}" target="_blank">${text.replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;').replace(/\s/g, '&nbsp;')}</a></span>`
   } 
-  return `<span style="${styleText}">${text.replace(/\s/i, '&nbsp;')}</span>`
+  return `<span style="${styleText}">${text.replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;').replace(/\s/g, '&nbsp;')}</span>`
 }
