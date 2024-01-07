@@ -14,7 +14,7 @@ import {
   getFontShadow,
 } from './fontStyle'
 
-export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, type, warpObj, fontsizeFactor, slideFactor) {
+export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, type, warpObj) {
   if (!textBodyNode) return ''
 
   let text = ''
@@ -71,10 +71,10 @@ export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, type, warpO
       text += `<p style="text-align: ${align};">`
     }
     
-    if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj, fontsizeFactor, slideFactor)
+    if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj)
     else {
       for (const rNodeItem of rNode) {
-        text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj, fontsizeFactor, slideFactor)
+        text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj)
       }
     }
 
@@ -94,7 +94,7 @@ export function getListType(node) {
   return ''
 }
 
-export function genSpanElement(node, slideLayoutSpNode, type, warpObj, fontsizeFactor, slideFactor) {
+export function genSpanElement(node, slideLayoutSpNode, type, warpObj) {
   const slideMasterTextStyles = warpObj['slideMasterTextStyles']
 
   let text = node['a:t']
@@ -103,14 +103,14 @@ export function genSpanElement(node, slideLayoutSpNode, type, warpObj, fontsizeF
 
   let styleText = ''
   const fontColor = getFontColor(node)
-  const fontSize = getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles, fontsizeFactor)
+  const fontSize = getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles, warpObj.options.fontsizeFactor)
   const fontType = getFontType(node, type, warpObj)
   const fontBold = getFontBold(node)
   const fontItalic = getFontItalic(node)
   const fontDecoration = getFontDecoration(node)
   const fontDecorationLine = getFontDecorationLine(node)
-  const fontSpace = getFontSpace(node, fontsizeFactor)
-  const shadow = getFontShadow(node, warpObj, slideFactor)
+  const fontSpace = getFontSpace(node, warpObj.options.fontsizeFactor)
+  const shadow = getFontShadow(node, warpObj)
   const subscript = getFontSubscript(node)
 
   if (fontColor) styleText += `color: ${fontColor};`

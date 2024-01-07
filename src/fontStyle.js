@@ -88,10 +88,10 @@ export function getFontSubscript(node) {
   return parseInt(baseline) > 0 ? 'super' : 'sub'
 }
 
-export function getFontShadow(node, warpObj, slideFactor) {
+export function getFontShadow(node, warpObj) {
   const txtShadow = getTextByPathList(node, ['a:rPr', 'a:effectLst', 'a:outerShdw'])
   if (txtShadow) {
-    const shadow = getShadow(txtShadow, warpObj, slideFactor)
+    const shadow = getShadow(txtShadow, warpObj)
     if (shadow) {
       const { h, v, blur, color } = shadow
       if (!isNaN(v) && !isNaN(h)) {

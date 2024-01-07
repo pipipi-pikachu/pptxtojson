@@ -1,6 +1,7 @@
 import { getSolidFill } from './fill'
 
-export function getShadow(node, warpObj, slideFactor) {
+export function getShadow(node, warpObj) {
+  const slideFactor = warpObj.options.slideFactor
   const chdwClrNode = getSolidFill(node, undefined, undefined, warpObj)
   const outerShdwAttrs = node['attrs']
   const dir = (outerShdwAttrs['dir']) ? (parseInt(outerShdwAttrs['dir']) / 60000) : 0

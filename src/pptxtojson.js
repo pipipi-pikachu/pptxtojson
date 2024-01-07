@@ -10,30 +10,24 @@ import { getCustomShapePath } from './shape'
 import { extractFileExtension, base64ArrayBuffer, getTextByPathList, angleToDegrees, getMimeType, isVideoLink, escapeHtml } from './utils'
 import { getShadow } from './shadow'
 
-let SLIDE_FACTOR = 96 / 914400
-let FONTSIZE_FACTOR = 100 / 75
-
-const defaultOptions = {
-  slideFactor: SLIDE_FACTOR,
-  fontsizeFactor: FONTSIZE_FACTOR,
-}
-
 export async function parse(file, options = {}) {
-  options = { ...defaultOptions, ...options }
+  const defaultOptions = {
+    slideFactor: 96 / 914400,
+    fontsizeFactor: 100 / 75,
+  }
 
-  if (options.slideFactor) SLIDE_FACTOR = options.slideFactor
-  if (options.fontsizeFactor) FONTSIZE_FACTOR = options.fontsizeFactor
+  options = { ...defaultOptions, ...options }
 
   const slides = []
   
   const zip = await JSZip.loadAsync(file)
 
   const filesInfo = await getContentTypes(zip)
-  const { width, height, defaultTextStyle } = await getSlideInfo(zip)
+  const { width, height, defaultTextStyle } = await getSlideInfo(zip, options)
   const themeContent = await loadTheme(zip)
 
   for (const filename of filesInfo.slides) {
-    const singleSlide = await processSingleSlide(zip, filename, themeContent, defaultTextStyle)
+    const singleSlide = await processSingleSlide(zip, filename, themeContent, defaultTextStyle, options)
     slides.push(singleSlide)
   }
 
@@ -78,13 +72,13 @@ async function getContentTypes(zip) {
   }
 }
 
-async function getSlideInfo(zip) {
+async function getSlideInfo(zip, options) {
   const content = await readXmlFile(zip, 'ppt/presentation.xml')
   const sldSzAttrs = content['p:presentation']['p:sldSz']['attrs']
   const defaultTextStyle = content['p:presentation']['p:defaultTextStyle']
   return {
-    width: parseInt(sldSzAttrs['cx']) * SLIDE_FACTOR,
-    height: parseInt(sldSzAttrs['cy']) * SLIDE_FACTOR,
+    width: parseInt(sldSzAttrs['cx']) * options.slideFactor,
+    height: parseInt(sldSzAttrs['cy']) * options.slideFactor,
     defaultTextStyle,
   }
 }
@@ -110,7 +104,7 @@ async function loadTheme(zip) {
   return await readXmlFile(zip, 'ppt/' + themeURI)
 }
 
-async function processSingleSlide(zip, sldFileName, themeContent, defaultTextStyle) {
+async function processSingleSlide(zip, sldFileName, themeContent, defaultTextStyle, options) {
   const resName = sldFileName.replace('slides/slide', 'slides/_rels/slide') + '.rels'
   const resContent = await readXmlFile(zip, resName)
   let relationshipArray = resContent['Relationships']['Relationship']
@@ -258,21 +252,22 @@ async function processSingleSlide(zip, sldFileName, themeContent, defaultTextSty
   const nodes = slideContent['p:sld']['p:cSld']['p:spTree']
   const warpObj = {
     zip,
-    slideLayoutContent: slideLayoutContent,
-    slideLayoutTables: slideLayoutTables,
-    slideMasterContent: slideMasterContent,
-    slideMasterTables: slideMasterTables,
-    slideContent: slideContent,
-    tableStyles: tableStyles,
-    slideResObj: slideResObj,
-    slideMasterTextStyles: slideMasterTextStyles,
-    layoutResObj: layoutResObj,
-    masterResObj: masterResObj,
-    themeContent: themeContent,
-    themeResObj: themeResObj,
-    digramFileContent: digramFileContent,
-    diagramResObj: diagramResObj,
-    defaultTextStyle: defaultTextStyle,
+    slideLayoutContent,
+    slideLayoutTables,
+    slideMasterContent,
+    slideMasterTables,
+    slideContent,
+    tableStyles,
+    slideResObj,
+    slideMasterTextStyles,
+    layoutResObj,
+    masterResObj,
+    themeContent,
+    themeResObj,
+    digramFileContent,
+    diagramResObj,
+    defaultTextStyle,
+    options,
   }
   // const bgElements = await getBackground(warpObj)
   const bgColor = await getSlideBackgroundFill(warpObj)
@@ -413,16 +408,16 @@ async function processGroupSpNode(node, warpObj, source) {
   const xfrmNode = getTextByPathList(node, ['p:grpSpPr', 'a:xfrm'])
   if (!xfrmNode) return null
 
-  const x = parseInt(xfrmNode['a:off']['attrs']['x']) * SLIDE_FACTOR
-  const y = parseInt(xfrmNode['a:off']['attrs']['y']) * SLIDE_FACTOR
+  const x = parseInt(xfrmNode['a:off']['attrs']['x']) * warpObj.options.slideFactor
+  const y = parseInt(xfrmNode['a:off']['attrs']['y']) * warpObj.options.slideFactor
   // https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.drawing.childoffset?view=openxml-2.8.1
-  const chx = parseInt(xfrmNode['a:chOff']['attrs']['x']) * SLIDE_FACTOR
-  const chy = parseInt(xfrmNode['a:chOff']['attrs']['y']) * SLIDE_FACTOR
-  const cx = parseInt(xfrmNode['a:ext']['attrs']['cx']) * SLIDE_FACTOR
-  const cy = parseInt(xfrmNode['a:ext']['attrs']['cy']) * SLIDE_FACTOR
+  const chx = parseInt(xfrmNode['a:chOff']['attrs']['x']) * warpObj.options.slideFactor
+  const chy = parseInt(xfrmNode['a:chOff']['attrs']['y']) * warpObj.options.slideFactor
+  const cx = parseInt(xfrmNode['a:ext']['attrs']['cx']) * warpObj.options.slideFactor
+  const cy = parseInt(xfrmNode['a:ext']['attrs']['cy']) * warpObj.options.slideFactor
   // https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.drawing.childextents?view=openxml-2.8.1
-  const chcx = parseInt(xfrmNode['a:chExt']['attrs']['cx']) * SLIDE_FACTOR
-  const chcy = parseInt(xfrmNode['a:chExt']['attrs']['cy']) * SLIDE_FACTOR
+  const chcx = parseInt(xfrmNode['a:chExt']['attrs']['cx']) * warpObj.options.slideFactor
+  const chcy = parseInt(xfrmNode['a:chExt']['attrs']['cy']) * warpObj.options.slideFactor
   // children coordinate
   const ws = cx / chcx
   const hs = cy / chcy
@@ -510,8 +505,8 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, name, type, warpOb
   const shapType = getTextByPathList(node, ['p:spPr', 'a:prstGeom', 'attrs', 'prst'])
   const custShapType = getTextByPathList(node, ['p:spPr', 'a:custGeom'])
 
-  const { top, left } = getPosition(slideXfrmNode, slideLayoutXfrmNode, slideMasterXfrmNode, SLIDE_FACTOR)
-  const { width, height } = getSize(slideXfrmNode, slideLayoutXfrmNode, slideMasterXfrmNode, SLIDE_FACTOR)
+  const { top, left } = getPosition(slideXfrmNode, slideLayoutXfrmNode, slideMasterXfrmNode, warpObj.options.slideFactor)
+  const { width, height } = getSize(slideXfrmNode, slideLayoutXfrmNode, slideMasterXfrmNode, warpObj.options.slideFactor)
 
   const isFlipV = getTextByPathList(slideXfrmNode, ['attrs', 'flipV']) === '1'
   const isFlipH = getTextByPathList(slideXfrmNode, ['attrs', 'flipH']) === '1'
@@ -527,14 +522,14 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, name, type, warpOb
   else txtRotate = rotate
 
   let content = ''
-  if (node['p:txBody']) content = genTextBody(node['p:txBody'], node, slideLayoutSpNode, type, warpObj, FONTSIZE_FACTOR, SLIDE_FACTOR)
+  if (node['p:txBody']) content = genTextBody(node['p:txBody'], node, slideLayoutSpNode, type, warpObj)
 
   const { borderColor, borderWidth, borderType, strokeDasharray } = getBorder(node, type, warpObj)
   const fillColor = getShapeFill(node, undefined, warpObj) || ''
 
   let shadow
   const outerShdwNode = getTextByPathList(node, ['p:spPr', 'a:effectLst', 'a:outerShdw'])
-  if (outerShdwNode) shadow = getShadow(outerShdwNode, warpObj, SLIDE_FACTOR)
+  if (outerShdwNode) shadow = getShadow(outerShdwNode, warpObj)
 
   const vAlign = getVerticalAlign(node, slideLayoutSpNode, slideMasterSpNode, type)
   const isVertical = getTextByPathList(node, ['p:txBody', 'a:bodyPr', 'attrs', 'vert']) === 'eaVert'
@@ -561,8 +556,8 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, name, type, warpOb
 
   if (custShapType && type !== 'diagram') {
     const ext = getTextByPathList(slideXfrmNode, ['a:ext', 'attrs'])
-    const w = parseInt(ext['cx']) * SLIDE_FACTOR
-    const h = parseInt(ext['cy']) * SLIDE_FACTOR
+    const w = parseInt(ext['cx']) * warpObj.options.slideFactor
+    const h = parseInt(ext['cy']) * warpObj.options.slideFactor
     const d = getCustomShapePath(custShapType, w, h)
 
     return {
@@ -601,8 +596,8 @@ async function processPicNode(node, warpObj, source) {
   const xfrmNode = node['p:spPr']['a:xfrm']
 
   const mimeType = getMimeType(imgFileExt)
-  const { top, left } = getPosition(xfrmNode, undefined, undefined, SLIDE_FACTOR)
-  const { width, height } = getSize(xfrmNode, undefined, undefined, SLIDE_FACTOR)
+  const { top, left } = getPosition(xfrmNode, undefined, undefined, warpObj.options.slideFactor)
+  const { width, height } = getSize(xfrmNode, undefined, undefined, warpObj.options.slideFactor)
   const src = `data:${mimeType};base64,${base64ArrayBuffer(imgArrayBuffer)}`
 
   const isFlipV = getTextByPathList(xfrmNode, ['attrs', 'flipV']) === '1'
@@ -720,8 +715,8 @@ async function processGraphicFrameNode(node, warpObj, source) {
 function genTable(node, warpObj) {
   const tableNode = getTextByPathList(node, ['a:graphic', 'a:graphicData', 'a:tbl'])
   const xfrmNode = getTextByPathList(node, ['p:xfrm'])
-  const { top, left } = getPosition(xfrmNode, undefined, undefined, SLIDE_FACTOR)
-  const { width, height } = getSize(xfrmNode, undefined, undefined, SLIDE_FACTOR)
+  const { top, left } = getPosition(xfrmNode, undefined, undefined, warpObj.options.slideFactor)
+  const { width, height } = getSize(xfrmNode, undefined, undefined, warpObj.options.slideFactor)
 
   const getTblPr = getTextByPathList(node, ['a:graphic', 'a:graphicData', 'a:tbl', 'a:tblPr'])
 
@@ -766,7 +761,7 @@ function genTable(node, warpObj) {
 
       if (tcNodes.constructor === Array) {
         for (const tcNode of tcNodes) {
-          const text = genTextBody(tcNode['a:txBody'], tcNode, undefined, undefined, warpObj, FONTSIZE_FACTOR, SLIDE_FACTOR)
+          const text = genTextBody(tcNode['a:txBody'], tcNode, undefined, undefined, warpObj)
           const rowSpan = getTextByPathList(tcNode, ['attrs', 'rowSpan'])
           const colSpan = getTextByPathList(tcNode, ['attrs', 'gridSpan'])
           const vMerge = getTextByPathList(tcNode, ['attrs', 'vMerge'])
@@ -776,7 +771,7 @@ function genTable(node, warpObj) {
         }
       } 
       else {
-        const text = genTextBody(tcNodes['a:txBody'], tcNodes, undefined, undefined, warpObj, FONTSIZE_FACTOR, SLIDE_FACTOR)
+        const text = genTextBody(tcNodes['a:txBody'], tcNodes, undefined, undefined, warpObj)
         tr.push({ text })
       }
       data.push(tr)
@@ -788,12 +783,12 @@ function genTable(node, warpObj) {
 
     if (tcNodes.constructor === Array) {
       for (const tcNode of tcNodes) {
-        const text = genTextBody(tcNode['a:txBody'], tcNode, undefined, undefined, warpObj, FONTSIZE_FACTOR, SLIDE_FACTOR)
+        const text = genTextBody(tcNode['a:txBody'], tcNode, undefined, undefined, warpObj)
         tr.push({ text })
       }
     } 
     else {
-      const text = genTextBody(tcNodes['a:txBody'], tcNodes, undefined, undefined, warpObj, FONTSIZE_FACTOR, SLIDE_FACTOR)
+      const text = genTextBody(tcNodes['a:txBody'], tcNodes, undefined, undefined, warpObj)
       tr.push({ text })
     }
     data.push(tr)
@@ -812,8 +807,8 @@ function genTable(node, warpObj) {
 
 async function genChart(node, warpObj) {
   const xfrmNode = getTextByPathList(node, ['p:xfrm'])
-  const { top, left } = getPosition(xfrmNode, undefined, undefined, SLIDE_FACTOR)
-  const { width, height } = getSize(xfrmNode, undefined, undefined, SLIDE_FACTOR)
+  const { top, left } = getPosition(xfrmNode, undefined, undefined, warpObj.options.slideFactor)
+  const { width, height } = getSize(xfrmNode, undefined, undefined, warpObj.options.slideFactor)
 
   const rid = node['a:graphic']['a:graphicData']['c:chart']['attrs']['r:id']
   const refName = warpObj['slideResObj'][rid]['target']
@@ -844,8 +839,8 @@ async function genChart(node, warpObj) {
 
 function genDiagram(node, warpObj) {
   const xfrmNode = getTextByPathList(node, ['p:xfrm'])
-  const { left, top } = getPosition(xfrmNode, undefined, undefined, SLIDE_FACTOR)
-  const { width, height } = getSize(xfrmNode, undefined, undefined, SLIDE_FACTOR)
+  const { left, top } = getPosition(xfrmNode, undefined, undefined, warpObj.options.slideFactor)
+  const { width, height } = getSize(xfrmNode, undefined, undefined, warpObj.options.slideFactor)
   
   const dgmDrwSpArray = getTextByPathList(warpObj['digramFileContent'], ['p:drawing', 'p:spTree', 'p:sp'])
   const elements = []
