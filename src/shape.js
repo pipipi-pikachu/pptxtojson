@@ -33,11 +33,14 @@ export function shapeArc(cX, cY, rX, rY, stAng, endAng, isClose) {
 
 export function getCustomShapePath(custShapType, w, h) {
   const pathLstNode = getTextByPathList(custShapType, ['a:pathLst'])
-  const pathNodes = getTextByPathList(pathLstNode, ['a:path'])
+  let pathNodes = getTextByPathList(pathLstNode, ['a:path'])
+
+  if (Array.isArray(pathNodes)) pathNodes = pathNodes.pop()
+
   const maxX = parseInt(pathNodes['attrs']['w'])
   const maxY = parseInt(pathNodes['attrs']['h'])
-  const cX = (1 / maxX) * w
-  const cY = (1 / maxY) * h
+  const cX = maxX === 0 ? 0 : (1 / maxX) * w
+  const cY = maxY === 0 ? 0 : (1 / maxY) * h
   let d = ''
 
   let moveToNode = getTextByPathList(pathNodes, ['a:moveTo'])
