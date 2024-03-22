@@ -2,6 +2,18 @@ import { getTextByPathList } from './utils'
 
 export function getSchemeColorFromTheme(schemeClr, warpObj) {
   switch (schemeClr) {
+    case 'a:tx1':
+      schemeClr = 'a:dk1'
+      break
+    case 'a:tx2':
+      schemeClr = 'a:dk2'
+      break
+    case 'a:bg1':
+      schemeClr = 'a:lt1'
+      break
+    case 'a:bg2':
+      schemeClr = 'a:lt2'
+      break
     case 'tx1':
       schemeClr = 'a:dk1'
       break
