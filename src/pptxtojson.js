@@ -567,7 +567,7 @@ function genShape(node, slideLayoutSpNode, slideMasterSpNode, name, type, warpOb
       path: d,
     }
   }
-  if (shapType && type !== 'text') {
+  if (shapType && type === 'obj') {
     return {
       ...data,
       type: 'shape',

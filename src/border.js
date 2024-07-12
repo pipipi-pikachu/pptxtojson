@@ -8,7 +8,7 @@ export function getBorder(node, elType, warpObj) {
   let borderWidth = parseInt(getTextByPathList(lineNode, ['attrs', 'w'])) / 12700
   if (isNaN(borderWidth)) {
     if (lineNode) borderWidth = 0
-    else if (elType === 'text') borderWidth = 0
+    else if (elType !== 'obj') borderWidth = 0
     else borderWidth = 1
   }
 

@@ -263,7 +263,7 @@ export function getSolidFill(solidFill, clrMap, phClr, warpObj) {
   } 
   else if (solidFill['a:schemeClr']) {
     const schemeClr = 'a:' + getTextByPathList(solidFill['a:schemeClr'], ['attrs', 'val'])
-    color = getSchemeColorFromTheme(schemeClr, warpObj)
+    color = getSchemeColorFromTheme(schemeClr, warpObj) || '#ffffffff'
     
     let lumMod = parseInt(getTextByPathList(solidFill, ['a:schemeClr', 'a:lumMod', 'attrs', 'val'])) / 100000
     let lumOff = parseInt(getTextByPathList(solidFill, ['a:schemeClr', 'a:lumOff', 'attrs', 'val'])) / 100000

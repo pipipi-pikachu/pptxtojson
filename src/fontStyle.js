@@ -29,7 +29,7 @@ export function getFontColor(node) {
 export function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles, fontsizeFactor) {
   let fontSize
 
-  if (node['a:rPr']) fontSize = parseInt(node['a:rPr']['attrs']['sz']) / 100
+  if (getTextByPathList(node, ['a:rPr', 'attrs', 'sz'])) fontSize = getTextByPathList(node, ['a:rPr', 'attrs', 'sz']) / 100
 
   if ((isNaN(fontSize) || !fontSize)) {
     const sz = getTextByPathList(slideLayoutSpNode, ['p:txBody', 'a:lstStyle', 'a:lvl1pPr', 'a:defRPr', 'attrs', 'sz'])
