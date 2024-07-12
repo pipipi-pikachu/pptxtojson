@@ -24,7 +24,7 @@
 	"homepage": "https://github.com/pipipi-pikachu/pptxtojson",
 	"license": "MIT",
 	"publishConfig": {
-		"registry": "https://registry.npmjs.com"
+		"registry": "https://registry.npmjs.org"
 	},
 	"dependencies": {
 		"jszip": "^3.10.1",
