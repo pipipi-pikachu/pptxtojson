@@ -121,7 +121,7 @@ export function genSpanElement(node, slideLayoutSpNode, type, warpObj) {
   if (fontDecoration) styleText += `text-decoration: ${fontDecoration};`
   if (fontDecorationLine) styleText += `text-decoration-line: ${fontDecorationLine};`
   if (fontSpace) styleText += `letter-spacing: ${fontSpace};`
-  if (subscript) styleText += `vertical-align: ${subscript}; font-size: smaller;`
+  if (subscript) styleText += `vertical-align: ${subscript};`
   if (shadow) styleText += `text-shadow: ${shadow};`
 
   const linkID = getTextByPathList(node, ['a:rPr', 'a:hlinkClick', 'attrs', 'r:id'])

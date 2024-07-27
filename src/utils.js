@@ -128,6 +128,11 @@ export function getMimeType(imgFileExt) {
     case 'wav':
       mimeType = 'audio/wav'
       break
+    case 'emf':
+      mimeType = 'image/emf';
+      break;
+    case 'wmf':
+      mimeType = 'image/wmf';
     case 'tif':
     case 'tiff':
       mimeType = 'image/tiff'
