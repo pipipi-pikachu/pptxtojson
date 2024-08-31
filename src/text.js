@@ -103,13 +103,13 @@ export function genSpanElement(node, slideLayoutSpNode, type, warpObj) {
 
   let styleText = ''
   const fontColor = getFontColor(node)
-  const fontSize = getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles, warpObj.options.fontsizeFactor)
+  const fontSize = getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles)
   const fontType = getFontType(node, type, warpObj)
   const fontBold = getFontBold(node)
   const fontItalic = getFontItalic(node)
   const fontDecoration = getFontDecoration(node)
   const fontDecorationLine = getFontDecorationLine(node)
-  const fontSpace = getFontSpace(node, warpObj.options.fontsizeFactor)
+  const fontSpace = getFontSpace(node)
   const shadow = getFontShadow(node, warpObj)
   const subscript = getFontSubscript(node)
 

@@ -1,4 +1,6 @@
-export function getPosition(slideSpNode, slideLayoutSpNode, slideMasterSpNode, factor) {
+import { RATIO_EMUs_Points } from './constants'
+
+export function getPosition(slideSpNode, slideLayoutSpNode, slideMasterSpNode) {
   let off
 
   if (slideSpNode) off = slideSpNode['a:off']['attrs']
@@ -8,12 +10,12 @@ export function getPosition(slideSpNode, slideLayoutSpNode, slideMasterSpNode, f
   if (!off) return { top: 0, left: 0 }
 
   return {
-    top: parseFloat((parseInt(off['y']) * factor).toFixed(2)),
-    left: parseFloat((parseInt(off['x']) * factor).toFixed(2)),
+    top: parseInt(off['y']) * RATIO_EMUs_Points,
+    left: parseInt(off['x']) * RATIO_EMUs_Points,
   }
 }
 
-export function getSize(slideSpNode, slideLayoutSpNode, slideMasterSpNode, factor) {
+export function getSize(slideSpNode, slideLayoutSpNode, slideMasterSpNode) {
   let ext
 
   if (slideSpNode) ext = slideSpNode['a:ext']['attrs']
@@ -23,7 +25,7 @@ export function getSize(slideSpNode, slideLayoutSpNode, slideMasterSpNode, facto
   if (!ext) return { width: 0, height: 0 }
 
   return {
-    width: parseFloat((parseInt(ext['cx']) * factor).toFixed(2)),
-    height: parseFloat((parseInt(ext['cy']) * factor).toFixed(2)),
+    width: parseInt(ext['cx']) * RATIO_EMUs_Points,
+    height: parseInt(ext['cy']) * RATIO_EMUs_Points,
   }
 }

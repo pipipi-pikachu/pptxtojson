@@ -26,7 +26,7 @@ export function getFontColor(node) {
   return color ? `#${color}` : ''
 }
 
-export function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles, fontsizeFactor) {
+export function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles) {
   let fontSize
 
   if (getTextByPathList(node, ['a:rPr', 'attrs', 'sz'])) fontSize = getTextByPathList(node, ['a:rPr', 'attrs', 'sz']) / 100
@@ -58,7 +58,7 @@ export function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles
 
   fontSize = (isNaN(fontSize) || !fontSize) ? 18 : fontSize
 
-  return parseFloat((fontSize * fontsizeFactor).toFixed(2)) + (fontsizeFactor === 1 ? 'pt' : 'px')
+  return fontSize + 'pt'
 }
 
 export function getFontBold(node) {
@@ -77,9 +77,9 @@ export function getFontDecorationLine(node) {
   return getTextByPathList(node, ['a:rPr', 'attrs', 'strike']) === 'sngStrike' ? 'line-through' : ''
 }
 
-export function getFontSpace(node, fontsizeFactor) {
+export function getFontSpace(node) {
   const spc = getTextByPathList(node, ['a:rPr', 'attrs', 'spc'])
-  return spc ? (parseInt(spc) / 100 * fontsizeFactor + 'px') : ''
+  return spc ? (parseInt(spc) / 100 + 'pt') : ''
 }
 
 export function getFontSubscript(node) {
