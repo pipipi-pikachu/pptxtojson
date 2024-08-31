@@ -451,7 +451,7 @@ export function getShapeFill(node, isSvgMode, warpObj) {
 export function getSolidFill(solidFill, clrMap, phClr, warpObj) {
   if (!solidFill) return solidFill
 
-  let color = 'fff'
+  let color = '#ffffff'
   let clrNode
 
   if (solidFill['a:srgbClr']) {
@@ -468,7 +468,7 @@ export function getSolidFill(solidFill, clrMap, phClr, warpObj) {
 
     color = tinycolor(color).toHsl()
     const lum = color.l * lumMod + lumOff
-    return tinycolor({ h: color.h, s: color.s, l: lum, a: color.a }).toHex()
+    return '#' + tinycolor({ h: color.h, s: color.s, l: lum, a: color.a }).toHex()
   }
   else if (solidFill['a:scrgbClr']) {
     clrNode = solidFill['a:scrgbClr']
@@ -530,6 +530,8 @@ export function getSolidFill(solidFill, clrMap, phClr, warpObj) {
   if (!isNaN(tint)) {
     color = applyTint(color, tint, isAlpha)
   }
+
+  if (color && color.indexOf('#') === -1) color = '#' + color
 
   return color
 }

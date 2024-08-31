@@ -14,6 +14,6 @@ export function getShadow(node, warpObj) {
     h: hx,
     v: vx,
     blur: blurRad,
-    color: '#' + chdwClrNode,
+    color: chdwClrNode,
   }
 }

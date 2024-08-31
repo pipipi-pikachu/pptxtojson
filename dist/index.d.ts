@@ -66,6 +66,9 @@ export interface TableCell {
   colSpan?: number
   vMerge?: boolean
   hMerge?: boolean
+  fillColor?: string
+  fontColor?: string
+  fontBold?: boolean
 }
 export interface Table {
   type: 'table'

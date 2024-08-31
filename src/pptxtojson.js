@@ -9,6 +9,7 @@ import { genTextBody } from './text'
 import { getCustomShapePath } from './shape'
 import { extractFileExtension, base64ArrayBuffer, getTextByPathList, angleToDegrees, getMimeType, isVideoLink, escapeHtml } from './utils'
 import { getShadow } from './shadow'
+import { getTableCellParams, getTableRowParams } from './table'
 import { RATIO_EMUs_Points } from './constants'
 
 export async function parse(file) {
@@ -711,6 +712,21 @@ function genTable(node, warpObj) {
 
   const getTblPr = getTextByPathList(node, ['a:graphic', 'a:graphicData', 'a:tbl', 'a:tblPr'])
 
+  const firstRowAttr = getTblPr['attrs'] ? getTblPr['attrs']['firstRow'] : undefined
+  const firstColAttr = getTblPr['attrs'] ? getTblPr['attrs']['firstCol'] : undefined
+  const lastRowAttr = getTblPr['attrs'] ? getTblPr['attrs']['lastRow'] : undefined
+  const lastColAttr = getTblPr['attrs'] ? getTblPr['attrs']['lastCol'] : undefined
+  const bandRowAttr = getTblPr['attrs'] ? getTblPr['attrs']['bandRow'] : undefined
+  const bandColAttr = getTblPr['attrs'] ? getTblPr['attrs']['bandCol'] : undefined
+  const tblStylAttrObj = {
+    isFrstRowAttr: (firstRowAttr && firstRowAttr === '1') ? 1 : 0,
+    isFrstColAttr: (firstColAttr && firstColAttr === '1') ? 1 : 0,
+    isLstRowAttr: (lastRowAttr && lastRowAttr === '1') ? 1 : 0,
+    isLstColAttr: (lastColAttr && lastColAttr === '1') ? 1 : 0,
+    isBandRowAttr: (bandRowAttr && bandRowAttr === '1') ? 1 : 0,
+    isBandColAttr: (bandColAttr && bandColAttr === '1') ? 1 : 0,
+  }
+
   let thisTblStyle
   const tbleStyleId = getTblPr['a:tableStyleId']
   if (tbleStyleId) {
@@ -730,57 +746,115 @@ function genTable(node, warpObj) {
       }
     }
   }
+  if (thisTblStyle) thisTblStyle['tblStylAttrObj'] = tblStylAttrObj
 
-  let themeColor = ''
+  let tbl_bgcolor = ''
   let tbl_bgFillschemeClr = getTextByPathList(thisTblStyle, ['a:tblBg', 'a:fillRef'])
   if (tbl_bgFillschemeClr) {
-    themeColor = getSolidFill(tbl_bgFillschemeClr, undefined, undefined, warpObj)
+    tbl_bgcolor = getSolidFill(tbl_bgFillschemeClr, undefined, undefined, warpObj)
   }
   if (tbl_bgFillschemeClr === undefined) {
     tbl_bgFillschemeClr = getTextByPathList(thisTblStyle, ['a:wholeTbl', 'a:tcStyle', 'a:fill', 'a:solidFill'])
-    themeColor = getSolidFill(tbl_bgFillschemeClr, undefined, undefined, warpObj)
+    tbl_bgcolor = getSolidFill(tbl_bgFillschemeClr, undefined, undefined, warpObj)
   }
-  if (themeColor !== '') themeColor = '#' + themeColor
 
-  const trNodes = tableNode['a:tr']
+  let trNodes = tableNode['a:tr']
+  if (trNodes.constructor !== Array) trNodes = [trNodes]
   
   const data = []
-  if (trNodes.constructor === Array) {
-    for (const trNode of trNodes) {
-      const tcNodes = trNode['a:tc']
-      const tr = []
+  for (let i = 0; i < trNodes.length; i++) {
+    const trNode = trNodes[i]
+    
+    const {
+      fillColor,
+      fontColor,
+      fontBold,
+    } = getTableRowParams(trNodes, i, tblStylAttrObj, thisTblStyle, warpObj)
 
-      if (tcNodes.constructor === Array) {
-        for (const tcNode of tcNodes) {
-          const text = genTextBody(tcNode['a:txBody'], tcNode, undefined, undefined, warpObj)
-          const rowSpan = getTextByPathList(tcNode, ['attrs', 'rowSpan'])
-          const colSpan = getTextByPathList(tcNode, ['attrs', 'gridSpan'])
-          const vMerge = getTextByPathList(tcNode, ['attrs', 'vMerge'])
-          const hMerge = getTextByPathList(tcNode, ['attrs', 'hMerge'])
-
-          tr.push({ text, rowSpan, colSpan, vMerge, hMerge })
-        }
-      } 
-      else {
-        const text = genTextBody(tcNodes['a:txBody'], tcNodes, undefined, undefined, warpObj)
-        tr.push({ text })
-      }
-      data.push(tr)
-    }
-  } 
-  else {
-    const tcNodes = trNodes['a:tc']
+    const tcNodes = trNode['a:tc']
     const tr = []
 
     if (tcNodes.constructor === Array) {
-      for (const tcNode of tcNodes) {
+      for (let j = 0; j < tcNodes.length; j++) {
+        const tcNode = tcNodes[j]
+        let a_sorce
+        if (j === 0 && tblStylAttrObj['isFrstColAttr'] === 1) {
+          a_sorce = 'a:firstCol'
+          if (tblStylAttrObj['isLstRowAttr'] === 1 && i === (trNodes.length - 1) && getTextByPathList(thisTblStyle, ['a:seCell'])) {
+            a_sorce = 'a:seCell'
+          } 
+          else if (tblStylAttrObj['isFrstRowAttr'] === 1 && i === 0 &&
+            getTextByPathList(thisTblStyle, ['a:neCell'])) {
+            a_sorce = 'a:neCell'
+          }
+        } 
+        else if (
+          (j > 0 && tblStylAttrObj['isBandColAttr'] === 1) &&
+          !(tblStylAttrObj['isFrstColAttr'] === 1 && i === 0) &&
+          !(tblStylAttrObj['isLstRowAttr'] === 1 && i === (trNodes.length - 1)) &&
+          j !== (tcNodes.length - 1)
+        ) {
+          if ((j % 2) !== 0) {
+            let aBandNode = getTextByPathList(thisTblStyle, ['a:band2V'])
+            if (aBandNode === undefined) {
+              aBandNode = getTextByPathList(thisTblStyle, ['a:band1V'])
+              if (aBandNode) a_sorce = 'a:band2V'
+            } 
+            else a_sorce = 'a:band2V'
+          }
+        }
+        if (j === (tcNodes.length - 1) && tblStylAttrObj['isLstColAttr'] === 1) {
+          a_sorce = 'a:lastCol'
+          if (tblStylAttrObj['isLstRowAttr'] === 1 && i === (trNodes.length - 1) && getTextByPathList(thisTblStyle, ['a:swCell'])) {
+            a_sorce = 'a:swCell'
+          } 
+          else if (tblStylAttrObj['isFrstRowAttr'] === 1 && i === 0 && getTextByPathList(thisTblStyle, ['a:nwCell'])) {
+            a_sorce = 'a:nwCell'
+          }
+        }
         const text = genTextBody(tcNode['a:txBody'], tcNode, undefined, undefined, warpObj)
-        tr.push({ text })
+        const cell = getTableCellParams(tcNode, thisTblStyle, a_sorce, warpObj)
+        const td = { text }
+        if (cell.rowSpan) td.rowSpan = cell.rowSpan
+        if (cell.colSpan) td.colSpan = cell.colSpan
+        if (cell.vMerge) td.vMerge = cell.vMerge
+        if (cell.hMerge) td.hMerge = cell.hMerge
+        if (cell.fontBold || fontBold) td.fontBold = cell.fontBold || fontBold
+        if (cell.fontColor || fontColor) td.fontColor = cell.fontColor || fontColor
+        if (cell.fillColor || fillColor) td.fill = cell.fillColor || fillColor
+
+        tr.push(td)
       }
     } 
     else {
+      let a_sorce
+      if (tblStylAttrObj['isFrstColAttr'] === 1 && tblStylAttrObj['isLstRowAttr'] !== 1) {
+        a_sorce = 'a:firstCol'
+      } 
+      else if (tblStylAttrObj['isBandColAttr'] === 1 && tblStylAttrObj['isLstRowAttr'] !== 1) {
+        let aBandNode = getTextByPathList(thisTblStyle, ['a:band2V'])
+        if (!aBandNode) {
+          aBandNode = getTextByPathList(thisTblStyle, ['a:band1V'])
+          if (aBandNode) a_sorce = 'a:band2V'
+        } 
+        else a_sorce = 'a:band2V'
+      }
+      if (tblStylAttrObj['isLstColAttr'] === 1 && tblStylAttrObj['isLstRowAttr'] !== 1) {
+        a_sorce = 'a:lastCol'
+      }
+
       const text = genTextBody(tcNodes['a:txBody'], tcNodes, undefined, undefined, warpObj)
-      tr.push({ text })
+      const cell = getTableCellParams(tcNodes, thisTblStyle, a_sorce, warpObj)
+      const td = { text }
+      if (cell.rowSpan) td.rowSpan = cell.rowSpan
+      if (cell.colSpan) td.colSpan = cell.colSpan
+      if (cell.vMerge) td.vMerge = cell.vMerge
+      if (cell.hMerge) td.hMerge = cell.hMerge
+      if (cell.fontBold || fontBold) td.fontBold = cell.fontBold || fontBold
+      if (cell.fontColor || fontColor) td.fontColor = cell.fontColor || fontColor
+      if (cell.fillColor || fillColor) td.fill = cell.fillColor || fillColor
+
+      tr.push(td)
     }
     data.push(tr)
   }
@@ -792,7 +866,7 @@ function genTable(node, warpObj) {
     width,
     height,
     data,
-    themeColor,
+    themeColor: tbl_bgcolor,
   }
 }
 
