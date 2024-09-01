@@ -764,7 +764,7 @@ function genTable(node, warpObj) {
   const data = []
   for (let i = 0; i < trNodes.length; i++) {
     const trNode = trNodes[i]
-    
+
     const {
       fillColor,
       fontColor,
@@ -821,7 +821,7 @@ function genTable(node, warpObj) {
         if (cell.hMerge) td.hMerge = cell.hMerge
         if (cell.fontBold || fontBold) td.fontBold = cell.fontBold || fontBold
         if (cell.fontColor || fontColor) td.fontColor = cell.fontColor || fontColor
-        if (cell.fillColor || fillColor) td.fill = cell.fillColor || fillColor
+        if (cell.fillColor || fillColor || tbl_bgcolor) td.fill = cell.fillColor || fillColor || tbl_bgcolor
 
         tr.push(td)
       }
@@ -852,7 +852,7 @@ function genTable(node, warpObj) {
       if (cell.hMerge) td.hMerge = cell.hMerge
       if (cell.fontBold || fontBold) td.fontBold = cell.fontBold || fontBold
       if (cell.fontColor || fontColor) td.fontColor = cell.fontColor || fontColor
-      if (cell.fillColor || fillColor) td.fill = cell.fillColor || fillColor
+      if (cell.fillColor || fillColor || tbl_bgcolor) td.fill = cell.fillColor || fillColor || tbl_bgcolor
 
       tr.push(td)
     }
@@ -866,7 +866,6 @@ function genTable(node, warpObj) {
     width,
     height,
     data,
-    themeColor: tbl_bgcolor,
   }
 }
 

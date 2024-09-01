@@ -77,7 +77,6 @@ export interface Table {
   width: number
   height: number
   data: TableCell[][]
-  themeColor: string
 }
 
 export type ChartType = 'lineChart' |

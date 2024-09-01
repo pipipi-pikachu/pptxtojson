@@ -8,6 +8,7 @@ import {
   applyHueMod,
   applySatMod,
   hslToRgb,
+  getColorName2Hex,
 } from './color'
 
 import {
@@ -455,20 +456,13 @@ export function getSolidFill(solidFill, clrMap, phClr, warpObj) {
   let clrNode
 
   if (solidFill['a:srgbClr']) {
-    color = getTextByPathList(solidFill['a:srgbClr'], ['attrs', 'val'])
+    clrNode = solidFill['a:srgbClr']
+    color = getTextByPathList(clrNode, ['attrs', 'val'])
   } 
   else if (solidFill['a:schemeClr']) {
-    const schemeClr = 'a:' + getTextByPathList(solidFill['a:schemeClr'], ['attrs', 'val'])
+    clrNode = solidFill['a:schemeClr']
+    const schemeClr = 'a:' + getTextByPathList(clrNode, ['attrs', 'val'])
     color = getSchemeColorFromTheme(schemeClr, warpObj, clrMap, phClr) || '#ffffffff'
-    
-    let lumMod = parseInt(getTextByPathList(solidFill, ['a:schemeClr', 'a:lumMod', 'attrs', 'val'])) / 100000
-    let lumOff = parseInt(getTextByPathList(solidFill, ['a:schemeClr', 'a:lumOff', 'attrs', 'val'])) / 100000
-    if (isNaN(lumMod)) lumMod = 1.0
-    if (isNaN(lumOff)) lumOff = 0
-
-    color = tinycolor(color).toHsl()
-    const lum = color.l * lumMod + lumOff
-    return '#' + tinycolor({ h: color.h, s: color.s, l: lum, a: color.a }).toHex()
   }
   else if (solidFill['a:scrgbClr']) {
     clrNode = solidFill['a:scrgbClr']
@@ -480,7 +474,8 @@ export function getSolidFill(solidFill, clrMap, phClr, warpObj) {
   } 
   else if (solidFill['a:prstClr']) {
     clrNode = solidFill['a:prstClr']
-    color = getTextByPathList(clrNode, ['attrs', 'val'])
+    const prstClr = getTextByPathList(clrNode, ['attrs', 'val'])
+    color = getColorName2Hex(prstClr)
   } 
   else if (solidFill['a:hslClr']) {
     clrNode = solidFill['a:hslClr']
