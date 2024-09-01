@@ -95,7 +95,7 @@ export function getFontShadow(node, warpObj) {
     if (shadow) {
       const { h, v, blur, color } = shadow
       if (!isNaN(v) && !isNaN(h)) {
-        return h + 'px ' + v + 'px ' + (blur ? blur + 'px' : '') + ' ' + color
+        return h + 'pt ' + v + 'pt ' + (blur ? blur + 'pt' : '') + ' ' + color
       }
     }
   }
