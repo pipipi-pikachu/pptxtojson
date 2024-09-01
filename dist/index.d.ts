@@ -77,6 +77,9 @@ export interface Table {
   width: number
   height: number
   data: TableCell[][]
+  borderColor: string
+  borderWidth: number
+  borderType: 'solid' | 'dashed' | 'dotted'
 }
 
 export type ChartType = 'lineChart' |

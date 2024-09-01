@@ -9,7 +9,7 @@ import { genTextBody } from './text'
 import { getCustomShapePath } from './shape'
 import { extractFileExtension, base64ArrayBuffer, getTextByPathList, angleToDegrees, getMimeType, isVideoLink, escapeHtml } from './utils'
 import { getShadow } from './shadow'
-import { getTableCellParams, getTableRowParams } from './table'
+import { getTableBorders, getTableCellParams, getTableRowParams } from './table'
 import { RATIO_EMUs_Points } from './constants'
 
 export async function parse(file) {
@@ -748,6 +748,14 @@ function genTable(node, warpObj) {
   }
   if (thisTblStyle) thisTblStyle['tblStylAttrObj'] = tblStylAttrObj
 
+  let tbl_border
+  const tblStyl = getTextByPathList(thisTblStyle, ['a:wholeTbl', 'a:tcStyle'])
+  const tblBorderStyl = getTextByPathList(tblStyl, ['a:tcBdr'])
+  if (tblBorderStyl) {
+    const tbl_borders = getTableBorders(tblBorderStyl, warpObj)
+    if (tbl_borders) tbl_border = tbl_borders.bottom || tbl_borders.left || tbl_borders.right || tbl_borders.top
+  }
+
   let tbl_bgcolor = ''
   let tbl_bgFillschemeClr = getTextByPathList(thisTblStyle, ['a:tblBg', 'a:fillRef'])
   if (tbl_bgFillschemeClr) {
@@ -866,6 +874,7 @@ function genTable(node, warpObj) {
     width,
     height,
     data,
+    ...(tbl_border || {}),
   }
 }
 

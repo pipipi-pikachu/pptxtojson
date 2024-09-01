@@ -1,6 +1,47 @@
 import { getShapeFill, getSolidFill } from './fill'
 import { getTextByPathList } from './utils'
+import { getBorder } from './border'
 
+export function getTableBorders(node, warpObj) {
+  let borderStyles = {}
+  if (node['a:bottom']) {
+    const obj = {
+      'p:spPr': {
+        'a:ln': node['a:bottom']['a:ln']
+      }
+    }
+    const border = getBorder(obj, undefined, warpObj)
+    borderStyles.bottom = border
+  }
+  if (node['a:top']) {
+    const obj = {
+      'p:spPr': {
+        'a:ln': node['a:top']['a:ln']
+      }
+    }
+    const border = getBorder(obj, undefined, warpObj)
+    borderStyles.top = border
+  }
+  if (node['a:right']) {
+    const obj = {
+      'p:spPr': {
+        'a:ln': node['a:right']['a:ln']
+      }
+    }
+    const border = getBorder(obj, undefined, warpObj)
+    borderStyles.right = border
+  }
+  if (node['a:left']) {
+    const obj = {
+      'p:spPr': {
+        'a:ln': node['a:left']['a:ln']
+      }
+    }
+    const border = getBorder(obj, undefined, warpObj)
+    borderStyles.left = border
+  }
+  return borderStyles
+}
 
 export function getTableCellParams(tcNode, thisTblStyle, cellSource, warpObj) {
   const rowSpan = getTextByPathList(tcNode, ['attrs', 'rowSpan'])
