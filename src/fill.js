@@ -95,7 +95,7 @@ export function getBgGradientFill(bgPr, phClr, slideMasterContent, warpObj) {
 
       color_ary[i] = {
         pos: pos ? (pos / 1000 + '%') : '',
-        color: `#${lo_color}`,
+        color: lo_color,
       }
     }
     const lin = grdFill['a:lin']
@@ -110,7 +110,9 @@ export function getBgGradientFill(bgPr, phClr, slideMasterContent, warpObj) {
       colors: color_ary.sort((a, b) => parseInt(a.pos) - parseInt(b.pos)),
     }
   }
-  else if (phClr) return `#${phClr}`
+  else if (phClr) {
+    return phClr.indexOf('#') === -1 ? `#${phClr}` : phClr
+  }
   return null
 }
 
@@ -139,7 +141,7 @@ export async function getSlideBackgroundFill(warpObj) {
         else clrMapOvr = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:clrMap', 'attrs'])
       }
       const sldBgClr = getSolidFill(sldFill, clrMapOvr, undefined, warpObj)
-      background = `#${sldBgClr}`
+      background = sldBgClr
     }
     else if (bgFillTyp === 'GRADIENT_FILL') {
       const gradientFill = getBgGradientFill(bgPr, undefined, slideMasterContent, warpObj)
@@ -208,7 +210,7 @@ export async function getSlideBackgroundFill(warpObj) {
       if (bgFillTyp === 'SOLID_FILL') {
         const sldFill = bgFillLstIdx['a:solidFill']
         const sldBgClr = getSolidFill(sldFill, clrMapOvr, undefined, warpObj)
-        background = `#${sldBgClr}`
+        background = sldBgClr
       } 
       else if (bgFillTyp === 'GRADIENT_FILL') {
         const gradientFill = getBgGradientFill(bgFillLstIdx, phClr, slideMasterContent, warpObj)
@@ -236,7 +238,7 @@ export async function getSlideBackgroundFill(warpObj) {
       if (bgFillTyp === 'SOLID_FILL') {
         const sldFill = bgPr['a:solidFill']
         const sldBgClr = getSolidFill(sldFill, clrMapOvr, undefined, warpObj)
-        background = `#${sldBgClr}`
+        background = sldBgClr
       }
       else if (bgFillTyp === 'GRADIENT_FILL') {
         const gradientFill = getBgGradientFill(bgPr, undefined, slideMasterContent, warpObj)
@@ -297,7 +299,7 @@ export async function getSlideBackgroundFill(warpObj) {
         if (bgFillTyp === 'SOLID_FILL') {
           const sldFill = bgFillLstIdx['a:solidFill']
           const sldBgClr = getSolidFill(sldFill, clrMapOvr, undefined, warpObj)
-          background = `#${sldBgClr}`
+          background = sldBgClr
         } 
         else if (bgFillTyp === 'GRADIENT_FILL') {
           const gradientFill = getBgGradientFill(bgFillLstIdx, phClr, slideMasterContent, warpObj)
@@ -325,7 +327,7 @@ export async function getSlideBackgroundFill(warpObj) {
         if (bgFillTyp === 'SOLID_FILL') {
           const sldFill = bgPr['a:solidFill']
           const sldBgClr = getSolidFill(sldFill, clrMap, undefined, warpObj)
-          background = `#${sldBgClr}`
+          background = sldBgClr
         }
         else if (bgFillTyp === 'GRADIENT_FILL') {
           const gradientFill = getBgGradientFill(bgPr, undefined, slideMasterContent, warpObj)
@@ -386,7 +388,7 @@ export async function getSlideBackgroundFill(warpObj) {
           if (bgFillTyp === 'SOLID_FILL') {
             const sldFill = bgFillLstIdx['a:solidFill']
             const sldBgClr = getSolidFill(sldFill, clrMapOvr, undefined, warpObj)
-            background = `#${sldBgClr}`
+            background = sldBgClr
           } 
           else if (bgFillTyp === 'GRADIENT_FILL') {
             const gradientFill = getBgGradientFill(bgFillLstIdx, phClr, slideMasterContent, warpObj)
@@ -462,7 +464,7 @@ export function getSolidFill(solidFill, clrMap, phClr, warpObj) {
   else if (solidFill['a:schemeClr']) {
     clrNode = solidFill['a:schemeClr']
     const schemeClr = 'a:' + getTextByPathList(clrNode, ['attrs', 'val'])
-    color = getSchemeColorFromTheme(schemeClr, warpObj, clrMap, phClr) || '#ffffffff'
+    color = getSchemeColorFromTheme(schemeClr, warpObj, clrMap, phClr) || '#ffffff'
   }
   else if (solidFill['a:scrgbClr']) {
     clrNode = solidFill['a:scrgbClr']
