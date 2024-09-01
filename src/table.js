@@ -35,10 +35,10 @@ export function getTableCellParams(tcNode, thisTblStyle, cellSource, warpObj) {
     fillColor,
     fontColor,
     fontBold,
-    rowSpan,
-    colSpan,
-    vMerge,
-    hMerge,
+    rowSpan: rowSpan ? +rowSpan : undefined,
+    colSpan: colSpan ? +colSpan : undefined,
+    vMerge: vMerge ? +vMerge : undefined,
+    hMerge: hMerge ? +hMerge : undefined,
   }
 }
 

@@ -821,7 +821,7 @@ function genTable(node, warpObj) {
         if (cell.hMerge) td.hMerge = cell.hMerge
         if (cell.fontBold || fontBold) td.fontBold = cell.fontBold || fontBold
         if (cell.fontColor || fontColor) td.fontColor = cell.fontColor || fontColor
-        if (cell.fillColor || fillColor || tbl_bgcolor) td.fill = cell.fillColor || fillColor || tbl_bgcolor
+        if (cell.fillColor || fillColor || tbl_bgcolor) td.fillColor = cell.fillColor || fillColor || tbl_bgcolor
 
         tr.push(td)
       }
@@ -852,7 +852,7 @@ function genTable(node, warpObj) {
       if (cell.hMerge) td.hMerge = cell.hMerge
       if (cell.fontBold || fontBold) td.fontBold = cell.fontBold || fontBold
       if (cell.fontColor || fontColor) td.fontColor = cell.fontColor || fontColor
-      if (cell.fillColor || fillColor || tbl_bgcolor) td.fill = cell.fillColor || fillColor || tbl_bgcolor
+      if (cell.fillColor || fillColor || tbl_bgcolor) td.fillColor = cell.fillColor || fillColor || tbl_bgcolor
 
       tr.push(td)
     }

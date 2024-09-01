@@ -64,8 +64,8 @@ export interface TableCell {
   text: string
   rowSpan?: number
   colSpan?: number
-  vMerge?: boolean
-  hMerge?: boolean
+  vMerge?: number
+  hMerge?: number
   fillColor?: string
   fontColor?: string
   fontBold?: boolean
