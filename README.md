@@ -3,15 +3,15 @@
 
 > 与其他的pptx文件解析工具的最大区别在于：
 > 1. 直接运行在浏览器端；
-> 2. 解析结果是**可读**的 JSON 数据，而不仅仅是把 XML 文件内容原样翻译成 JSON。
+> 2. 解析结果是**可读**的 JSON 数据，而不仅仅是把 XML 文件内容原样翻译成难以理解的 JSON。
 
 在线DEMO：https://pipipi-pikachu.github.io/pptxtojson/
 
 # 🪧 注意事项
 ### ⚒️ 使用场景
-本仓库诞生于项目 [PPTist](https://github.com/pipipi-pikachu/PPTist) ，希望为其“导入 .pptx 文件功能”提供一个参考示例。不过就目前来说，解析出来的PPT信息与源文件**在样式上**还是存在不少差距，还不足以直接运用到生产环境中。
+本仓库诞生于项目 [PPTist](https://github.com/pipipi-pikachu/PPTist) ，希望为其“导入 .pptx 文件功能”提供一个参考示例。不过就目前来说，解析出来的PPT信息与源文件在样式上还是存在不少差距，还不足以直接运用到生产环境中。
 
-不过，如果你只是需要提取PPT文件的文本内容和媒体资源，对排版/样式信息没有特别高的要求，那么 pptxtojson 可能会对你有一些帮助。
+但如果你只是需要提取PPT文件的文本内容和媒体资源信息，对排版精准度/样式信息没有特别高的要求，那么 pptxtojson 可能会对你有一些帮助。
 
 ### 📏 长度值单位
 输出的JSON中，所有数值长度值单位都为`pt`（point）
@@ -158,7 +158,10 @@ document.querySelector('input').addEventListener('change', evt => {
 | left                   | number                         | 水平坐标          
 | top                    | number                         | 垂直坐标          
 | width                  | number                         | 宽度            
-| height                 | number                         | 高度            
+| height                 | number                         | 高度               
+| borderColor            | string                         | 边框颜色          
+| borderWidth            | number                         | 边框宽度          
+| borderType             | 'solid' 丨 'dashed' 丨 'dotted' | 边框类型           
 | data                   | TableCell[][]                  | 表格数据
 
 #### 图表
@@ -222,7 +225,8 @@ document.querySelector('input').addEventListener('change', evt => {
 [https://github.com/pipipi-pikachu/pptxtojson/blob/master/dist/index.d.ts](https://github.com/pipipi-pikachu/pptxtojson/blob/master/dist/index.d.ts)
 
 # 🙏 感谢
-> 本仓库主要参考了 [PPTX2HTML](https://github.com/g21589/PPTX2HTML) 、[PPTXjs](https://github.com/meshesha/PPTXjs) 的实现
+本仓库大量参考了 [PPTX2HTML](https://github.com/g21589/PPTX2HTML) 和 [PPTXjs](https://github.com/meshesha/PPTXjs) 的实现。
+> 与它们不同的是，PPTX2HTML 和 PPTXjs 是将PPT文件转换为能够运行的 HTML 页面，而 pptxtojson 做的是将PPT文件转换为干净的 JSON 数据
 
 # 📄 开源协议
 MIT License | Copyright © 2020-PRESENT [pipipi-pikachu](https://github.com/pipipi-pikachu)
