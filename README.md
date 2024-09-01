@@ -1,8 +1,21 @@
 # 🎨 pptxtojson
-这是一个可以将 .pptx 文件转为可读的 json 数据的 JavaScript 库。
+一个运行在浏览器中，可以将 .pptx 文件转为可读的 JSON 数据的 JavaScript 库。
+
+> 与其他的pptx文件解析工具的最大区别在于：
+> 1. 直接运行在浏览器端；
+> 2. 解析结果是**可读**的 JSON 数据，而不仅仅是把 XML 文件内容原样翻译成 JSON。
 
 在线DEMO：https://pipipi-pikachu.github.io/pptxtojson/
 
+# 🪧 注意事项
+### ⚒️ 使用场景
+本仓库诞生于项目 [PPTist](https://github.com/pipipi-pikachu/PPTist) ，希望为其“导入 .pptx 文件功能”提供一个参考示例。不过就目前来说，解析出来的PPT信息与源文件**在样式上**还是存在不少差距，还不足以直接运用到生产环境中。
+
+不过，如果你只是需要提取PPT文件的文本内容和媒体资源，对排版/样式信息没有特别高的要求，那么 pptxtojson 可能会对你有一些帮助。
+
+### 📏 长度值单位
+输出的JSON中，所有数值长度值单位都为`pt`（point）
+> 注意：在0.x版本中，所有输出的长度值单位都是px（像素）
 
 # 🔨安装
 ```
@@ -17,17 +30,12 @@ npm install pptxtojson
 ```js
 import { parse } from 'pptxtojson'
 
-const options = {
-	slideFactor: 75 / 914400, // 幻灯片尺寸转换因子，默认 96 / 914400
-	fontsizeFactor: 100 / 96, // 字号转换因子，默认 100 / 75
-}
-
 document.querySelector('input').addEventListener('change', evt => {
 	const file = evt.target.files[0]
 	
 	const reader = new FileReader()
 	reader.onload = async e => {
-		const json = await parse(e.target.result, options)
+		const json = await parse(e.target.result)
 		console.log(json)
 	}
 	reader.readAsArrayBuffer(file)
@@ -43,18 +51,34 @@ document.querySelector('input').addEventListener('change', evt => {
 			"value": "#FF0000"
 		},
 		"elements": [
-			// element data list
+			{
+				"left":	0,
+				"top": 0,
+				"width": 72,
+				"height":	72,
+				"borderColor": "#1f4e79",
+				"borderWidth": 1,
+				"borderType": "solid",
+				"borderStrokeDasharray": 0,
+				"fillColor": "#5b9bd5",
+				"content": "<p style=\"text-align: center;\"><span style=\"font-size: 18pt;font-family: Calibri;\">TEST</span></p>",
+				"isFlipV": false,
+				"isFlipH": false,
+				"rotate": 0,
+				"vAlign": "mid",
+				"name": "矩形 1",
+				"type": "shape",
+				"shapType": "rect"
+			},
+			// more...
 		],
 	},
 	"size": {
-		"width": 1280,
-		"height": 720
+		"width": 960,
+		"height": 540
 	}
 }
 ```
-
-# 📏 输出值单位
-为了方便在web应用中使用，在默认情况下，所有输出的长度值单位都是px（像素），但这个值不一定是正确的，你可能需要根据你的设备情况适当调整 `slideFactor` 和 `fontsizeFactor` 参数来获取更准确的结果。或者将这个两个参数全部设置为1，这样输出的将会是原始数据，你可以在此基础上将原数据根据具体情况进行转换。
 
 # 📕 功能支持
 
@@ -135,8 +159,7 @@ document.querySelector('input').addEventListener('change', evt => {
 | top                    | number                         | 垂直坐标          
 | width                  | number                         | 宽度            
 | height                 | number                         | 高度            
-| data                   | TableCell[][]                  | 表格数据    
-| themeColor             | string                         | 主题颜色  
+| data                   | TableCell[][]                  | 表格数据
 
 #### 图表
 | prop                   | type                           | 描述            
