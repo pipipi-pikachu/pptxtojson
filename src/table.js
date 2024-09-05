@@ -3,7 +3,7 @@ import { getTextByPathList } from './utils'
 import { getBorder } from './border'
 
 export function getTableBorders(node, warpObj) {
-  let borderStyles = {}
+  const borderStyles = {}
   if (node['a:bottom']) {
     const obj = {
       'p:spPr': {
