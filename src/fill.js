@@ -452,9 +452,9 @@ export function getShapeFill(node, isSvgMode, warpObj) {
 }
 
 export function getSolidFill(solidFill, clrMap, phClr, warpObj) {
-  if (!solidFill) return solidFill
+  if (!solidFill) return ''
 
-  let color = '#ffffff'
+  let color = ''
   let clrNode
 
   if (solidFill['a:srgbClr']) {
@@ -464,7 +464,7 @@ export function getSolidFill(solidFill, clrMap, phClr, warpObj) {
   else if (solidFill['a:schemeClr']) {
     clrNode = solidFill['a:schemeClr']
     const schemeClr = 'a:' + getTextByPathList(clrNode, ['attrs', 'val'])
-    color = getSchemeColorFromTheme(schemeClr, warpObj, clrMap, phClr) || '#ffffff'
+    color = getSchemeColorFromTheme(schemeClr, warpObj, clrMap, phClr) || ''
   }
   else if (solidFill['a:scrgbClr']) {
     clrNode = solidFill['a:scrgbClr']
