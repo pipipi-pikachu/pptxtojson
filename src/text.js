@@ -19,6 +19,8 @@ export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, type, warpO
 
   let text = ''
 
+  const pFontStyle = getTextByPathList(spNode, ['p:style', 'a:fontRef'])
+
   const pNode = textBodyNode['a:p']
   const pNodes = pNode.constructor === Array ? pNode : [pNode]
 
@@ -71,10 +73,10 @@ export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, type, warpO
       text += `<p style="text-align: ${align};">`
     }
     
-    if (!rNode) text += genSpanElement(pNode, slideLayoutSpNode, type, warpObj)
+    if (!rNode) text += genSpanElement(pNode, spNode, textBodyNode, pFontStyle, slideLayoutSpNode, type, warpObj)
     else {
       for (const rNodeItem of rNode) {
-        text += genSpanElement(rNodeItem, slideLayoutSpNode, type, warpObj)
+        text += genSpanElement(rNodeItem, pNode, textBodyNode, pFontStyle, slideLayoutSpNode, type, warpObj)
       }
     }
 
@@ -94,15 +96,21 @@ export function getListType(node) {
   return ''
 }
 
-export function genSpanElement(node, slideLayoutSpNode, type, warpObj) {
+export function genSpanElement(node, pNode, textBodyNode, pFontStyle, slideLayoutSpNode, type, warpObj) {
+  const lstStyle = textBodyNode['a:lstStyle']
   const slideMasterTextStyles = warpObj['slideMasterTextStyles']
+
+  let lvl = 1
+  const pPrNode = pNode['a:pPr']
+  const lvlNode = getTextByPathList(pPrNode, ['attrs', 'lvl'])
+  if (lvlNode !== undefined) lvl = parseInt(lvlNode) + 1
 
   let text = node['a:t']
   if (typeof text !== 'string') text = getTextByPathList(node, ['a:fld', 'a:t'])
   if (typeof text !== 'string') text = '&nbsp;'
 
   let styleText = ''
-  const fontColor = getFontColor(node)
+  const fontColor = getFontColor(node, pNode, lstStyle, pFontStyle, lvl, warpObj)
   const fontSize = getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles)
   const fontType = getFontType(node, type, warpObj)
   const fontBold = getFontBold(node)

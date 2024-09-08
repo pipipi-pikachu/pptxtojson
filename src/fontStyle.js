@@ -1,5 +1,6 @@
 import { getTextByPathList } from './utils'
 import { getShadow } from './shadow'
+import { getFillType, getSolidFill } from './fill'
 
 export function getFontType(node, type, warpObj) {
   let typeface = getTextByPathList(node, ['a:rPr', 'a:latin', 'attrs', 'typeface'])
@@ -21,9 +22,30 @@ export function getFontType(node, type, warpObj) {
   return typeface || ''
 }
 
-export function getFontColor(node) {
-  const color = getTextByPathList(node, ['a:rPr', 'a:solidFill', 'a:srgbClr', 'attrs', 'val'])
-  return color ? `#${color}` : ''
+export function getFontColor(node, pNode, lstStyle, pFontStyle, lvl, warpObj) {
+  const rPrNode = getTextByPathList(node, ['a:rPr'])
+  let filTyp, color
+  if (rPrNode) {
+    filTyp = getFillType(rPrNode)
+    if (filTyp === 'SOLID_FILL') {
+      const solidFillNode = rPrNode['a:solidFill']
+      color = getSolidFill(solidFillNode, undefined, undefined, warpObj)
+    }
+  }
+  if (!color && getTextByPathList(lstStyle, ['a:lvl' + lvl + 'pPr', 'a:defRPr'])) {
+    const lstStyledefRPr = getTextByPathList(lstStyle, ['a:lvl' + lvl + 'pPr', 'a:defRPr'])
+    filTyp = getFillType(lstStyledefRPr)
+    if (filTyp === 'SOLID_FILL') {
+      const solidFillNode = lstStyledefRPr['a:solidFill']
+      color = getSolidFill(solidFillNode, undefined, undefined, warpObj)
+    }
+  }
+  if (!color) {
+    const sPstyle = getTextByPathList(pNode, ['p:style', 'a:fontRef'])
+    if (sPstyle) color = getSolidFill(sPstyle, undefined, undefined, warpObj)
+    if (!color && pFontStyle) color = getSolidFill(pFontStyle, undefined, undefined, warpObj)
+  }
+  return color || ''
 }
 
 export function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles) {
