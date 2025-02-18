@@ -7,7 +7,7 @@ import { getVerticalAlign } from './align'
 import { getPosition, getSize } from './position'
 import { genTextBody } from './text'
 import { getCustomShapePath } from './shape'
-import { extractFileExtension, base64ArrayBuffer, getTextByPathList, angleToDegrees, getMimeType, isVideoLink, escapeHtml, hasValidText } from './utils'
+import { extractFileExtension, getTextByPathList, angleToDegrees, getMimeType, isVideoLink, escapeHtml, hasValidText } from './utils'
 import { getShadow } from './shadow'
 import { getTableBorders, getTableCellParams, getTableRowParams } from './table'
 import { RATIO_EMUs_Points } from './constants'
@@ -17,6 +17,8 @@ export async function parse(file) {
   const slides = []
   
   const zip = await JSZip.loadAsync(file)
+  zip._cacheMap = new Map()
+  zip.getFileBlobUrl = _zipFileToBlobUrl.bind(zip)
 
   const filesInfo = await getContentTypes(zip)
   const { width, height, defaultTextStyle } = await getSlideInfo(zip)
@@ -34,6 +36,26 @@ export async function parse(file) {
       height,
     },
   }
+}
+
+async function _zipFileToBlobUrl(fileName) {
+  if (this._cacheMap.get(fileName)) {
+    return this._cacheMap.get(fileName)
+  }
+
+  const fileArrayBuffer = await this.file(fileName).async('arraybuffer')
+  const fileExt = extractFileExtension(fileName).toLowerCase()
+  const mimeType = getMimeType(fileExt)
+
+  if (fileExt === 'mp3' || fileExt === 'wav' || fileExt === 'ogg') {
+    const src = URL.createObjectURL(new Blob([fileArrayBuffer]))
+    this._cacheMap.set(fileName, src)
+    return src
+  }
+
+  const src = URL.createObjectURL(new Blob([fileArrayBuffer], { type: mimeType }))
+  this._cacheMap.set(fileName, src)
+  return src
 }
 
 async function getContentTypes(zip) {
@@ -644,18 +666,15 @@ async function processPicNode(node, warpObj, source) {
   else resObj = warpObj['slideResObj']
 
   const order = node['attrs']['order']
-  
+
   const rid = node['p:blipFill']['a:blip']['attrs']['r:embed']
   const imgName = resObj[rid]['target']
-  const imgFileExt = extractFileExtension(imgName).toLowerCase()
   const zip = warpObj['zip']
-  const imgArrayBuffer = await zip.file(imgName).async('arraybuffer')
   const xfrmNode = node['p:spPr']['a:xfrm']
 
-  const mimeType = getMimeType(imgFileExt)
   const { top, left } = getPosition(xfrmNode, undefined, undefined)
   const { width, height } = getSize(xfrmNode, undefined, undefined)
-  const src = `data:${mimeType};base64,${base64ArrayBuffer(imgArrayBuffer)}`
+  const src = await zip.getFileBlobUrl(imgName)
 
   const isFlipV = getTextByPathList(xfrmNode, ['attrs', 'flipV']) === '1'
   const isFlipH = getTextByPathList(xfrmNode, ['attrs', 'flipH']) === '1'
@@ -665,7 +684,7 @@ async function processPicNode(node, warpObj, source) {
   if (rotateNode) rotate = angleToDegrees(rotateNode)
 
   const videoNode = getTextByPathList(node, ['p:nvPicPr', 'p:nvPr', 'a:videoFile'])
-  let videoRid, videoFile, videoFileExt, videoMimeType, uInt8ArrayVideo, videoBlob
+  let videoRid, videoFile, videoFileExt, videoBlob
   let isVdeoLink = false
 
   if (videoNode) {
@@ -674,28 +693,23 @@ async function processPicNode(node, warpObj, source) {
     if (isVideoLink(videoFile)) {
       videoFile = escapeHtml(videoFile)
       isVdeoLink = true
-    } 
+    }
     else {
       videoFileExt = extractFileExtension(videoFile).toLowerCase()
       if (videoFileExt === 'mp4' || videoFileExt === 'webm' || videoFileExt === 'ogg') {
-        uInt8ArrayVideo = await zip.file(videoFile).async('arraybuffer')
-        videoMimeType = getMimeType(videoFileExt)
-        videoBlob = URL.createObjectURL(new Blob([uInt8ArrayVideo], {
-          type: videoMimeType
-        }))
+        videoBlob = await zip.getFileBlobUrl(videoFile, zip)
       }
     }
   }
 
   const audioNode = getTextByPathList(node, ['p:nvPicPr', 'p:nvPr', 'a:audioFile'])
-  let audioRid, audioFile, audioFileExt, uInt8ArrayAudio, audioBlob
+  let audioRid, audioFile, audioFileExt, audioBlob
   if (audioNode) {
     audioRid = audioNode['attrs']['r:link']
     audioFile = resObj[audioRid]['target']
     audioFileExt = extractFileExtension(audioFile).toLowerCase()
     if (audioFileExt === 'mp3' || audioFileExt === 'wav' || audioFileExt === 'ogg') {
-      uInt8ArrayAudio = await zip.file(audioFile).async('arraybuffer')
-      audioBlob = URL.createObjectURL(new Blob([uInt8ArrayAudio]))
+      audioBlob = await zip.getFileBlobUrl(audioFile, zip)
     }
   }
 
@@ -704,19 +718,19 @@ async function processPicNode(node, warpObj, source) {
       type: 'video',
       top,
       left,
-      width, 
+      width,
       height,
       rotate,
       blob: videoBlob,
       order,
     }
-  } 
+  }
   if (videoNode && isVdeoLink) {
     return {
       type: 'video',
       top,
       left,
-      width, 
+      width,
       height,
       rotate,
       src: videoFile,
@@ -728,7 +742,7 @@ async function processPicNode(node, warpObj, source) {
       type: 'audio',
       top,
       left,
-      width, 
+      width,
       height,
       rotate,
       blob: audioBlob,
@@ -739,7 +753,7 @@ async function processPicNode(node, warpObj, source) {
     type: 'image',
     top,
     left,
-    width, 
+    width,
     height,
     rotate,
     src,

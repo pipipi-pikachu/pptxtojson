@@ -12,11 +12,9 @@ import {
 } from './color'
 
 import {
-  base64ArrayBuffer,
   getTextByPathList,
   angleToDegrees,
   escapeHtml,
-  getMimeType,
   toHex,
 } from './utils'
 
@@ -59,10 +57,7 @@ export async function getPicFill(type, node, warpObj) {
 
     const imgExt = imgPath.split('.').pop()
     if (imgExt === 'xml') return undefined
-
-    const imgArrayBuffer = await warpObj['zip'].file(imgPath).async('arraybuffer')
-    const imgMimeType = getMimeType(imgExt)
-    img = `data:${imgMimeType};base64,${base64ArrayBuffer(imgArrayBuffer)}`
+    img = await warpObj['zip'].getFileBlobUrl(imgPath)
   }
   return img
 }
