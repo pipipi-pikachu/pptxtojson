@@ -437,6 +437,22 @@ export function getShapeFill(node, isSvgMode, warpObj) {
   if (fillColor) {
     fillColor = `#${fillColor}`
 
+    // 检查透明度
+    const alpha = parseInt(getTextByPathList(node, ['p:spPr', 'a:solidFill', 'a:srgbClr', 'a:alpha', 'attrs', 'val'])) / 100000
+    if (!isNaN(alpha)) {
+      const color = tinycolor(fillColor)
+      color.setAlpha(alpha)
+      return color.toHex8String()
+    }
+
+    // 检查方案颜色的透明度
+    const schemeAlpha = parseInt(getTextByPathList(node, ['p:spPr', 'a:solidFill', 'a:schemeClr', 'a:alpha', 'attrs', 'val'])) / 100000
+    if (!isNaN(schemeAlpha)) {
+      const color = tinycolor(fillColor)
+      color.setAlpha(schemeAlpha)
+      return color.toHex8String()
+    }
+
     let lumMod = parseInt(getTextByPathList(node, ['p:spPr', 'a:solidFill', 'a:schemeClr', 'a:lumMod', 'attrs', 'val'])) / 100000
     let lumOff = parseInt(getTextByPathList(node, ['p:spPr', 'a:solidFill', 'a:schemeClr', 'a:lumOff', 'attrs', 'val'])) / 100000
     if (isNaN(lumMod)) lumMod = 1.0
