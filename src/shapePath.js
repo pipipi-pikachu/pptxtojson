@@ -1,7 +1,7 @@
 /* eslint-disable max-lines */
 
-import { RATIO_EMUs_Points } from './constants'
-import { getTextByPathList } from './utils'
+import { RATIO_EMUs_Points } from './constants.js'
+import { getTextByPathList } from './utils.js'
 
 function shapePie(H, w, adj1, adj2, isClose) {
   const pieVal = parseInt(adj2)
@@ -20,7 +20,7 @@ function shapePie(H, w, adj1, adj2, isClose) {
   if (isClose) {
     longArc = (value <= 180) ? 0 : 1
     d = `M${radius},${radius} L${radius},0 A${radius},${radius} 0 ${longArc},1 ${radius + y * radius},${radius - x * radius} z`
-  } 
+  }
   else {
     longArc = (value <= 180) ? 0 : 1
     const radius1 = radius
@@ -54,7 +54,7 @@ function shapeGear(h, points) {
     if (toggle) {
       d += ' L' + (cx + radiusI * Math.cos(a - taperAI)) + ',' + (cy + radiusI * Math.sin(a - taperAI))
       d += ' L' + (cx + radiusO * Math.cos(a + taperAO)) + ',' + (cy + radiusO * Math.sin(a + taperAO))
-    } 
+    }
     else {
       d += ' L' + (cx + radiusO * Math.cos(a - taperAO)) + ',' + (cy + radiusO * Math.sin(a - taperAO))
       d += ' L' + (cx + radiusI * Math.cos(a + taperAI)) + ',' + (cy + radiusI * Math.sin(a + taperAI))
@@ -123,7 +123,7 @@ function shapeSnipRoundRect(w, h, adj1, adj2, shapeType, adjType) {
 
   if (shapeType === 'round') {
     return `M0,${h / 2 + (1 - adjB) * (h / 2)} Q0,${h} ${adjB * (w / 2)},${h} L${w / 2 + (1 - adjC) * (w / 2)},${h} Q${w},${h} ${w},${h / 2 + (h / 2) * (1 - adjC)} L${w},${(h / 2) * adjD} Q${w},0 ${w / 2 + (w / 2) * (1 - adjD)},0 L${(w / 2) * adjA},0 Q0,0 0,${(h / 2) * (adjA)} z`
-  } 
+  }
   else if (shapeType === 'snip') {
     return `M0,${adjA * (h / 2)} L0,${h / 2 + (h / 2) * (1 - adjB)} L${adjB * (w / 2)},${h} L${w / 2 + (w / 2) * (1 - adjC)},${h} L${w},${h / 2 + (h / 2) * (1 - adjC)} L${w},${adjD * (h / 2)} L${w / 2 + (w / 2) * (1 - adjD)},0 L${(w / 2) * adjA},0 z`
   }
@@ -542,7 +542,7 @@ export function getShapePath(shapType, w, h, node) {
 
         if (shapType === 'flowChartOr') {
           pathData += ` M ${w / 2} 0 L ${w / 2} ${h} M 0 ${h / 2} L ${w} ${h / 2}`
-        } 
+        }
         else if (shapType === 'flowChartSummingJunction') {
           const angVal = Math.PI / 4
           const iDx = (w / 2) * Math.cos(angVal)
@@ -575,13 +575,13 @@ export function getShapePath(shapType, w, h, node) {
             if (sAdj_name === 'adj1') {
               const sAdj1 = getTextByPathList(adj, ['attrs', 'fmla'])
               sAdj1_val = parseInt(sAdj1.substring(4)) / 50000
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               const sAdj2 = getTextByPathList(adj, ['attrs', 'fmla'])
               sAdj2_val = parseInt(sAdj2.substring(4)) / 50000
             }
           }
-        } 
+        }
         else if (shapAdjst_ary) {
           const sAdj = getTextByPathList(shapAdjst_ary, ['attrs', 'fmla'])
           sAdj1_val = parseInt(sAdj.substring(4)) / 50000
@@ -664,7 +664,7 @@ export function getShapePath(shapType, w, h, node) {
             if (sAdj_name === 'adj1') {
               const sAdj1 = getTextByPathList(adj, ['attrs', 'fmla'])
               sAdj1_val = parseInt(sAdj1.substring(4)) / 50000
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               const sAdj2 = getTextByPathList(adj, ['attrs', 'fmla'])
               sAdj2_val = parseInt(sAdj2.substring(4)) / 50000
@@ -699,8 +699,8 @@ export function getShapePath(shapType, w, h, node) {
 
         if (shapType === 'flowChartMerge') {
           [p1x, p1y] = [w - p1x, h - p1y]
-          ;[p2x, p2y] = [w - p2x, h - p2y]
-          ;[p3x, p3y] = [w - p3x, h - p3y]
+            ;[p2x, p2y] = [w - p2x, h - p2y]
+            ;[p3x, p3y] = [w - p3x, h - p3y]
         }
 
         pathData = `M ${p1x} ${p1y} L ${p2x} ${p2y} L ${p3x} ${p3y} Z`
@@ -744,9 +744,9 @@ export function getShapePath(shapType, w, h, node) {
 
         if (shapType === 'flowChartManualOperation') {
           [p1x, p1y] = [w - p1x, h - p1y]
-          ;[p2x, p2y] = [w - p2x, h - p2y]
-          ;[p3x, p3y] = [w - p3x, h - p3y]
-          ;[p4x, p4y] = [w - p4x, h - p4y]
+            ;[p2x, p2y] = [w - p2x, h - p2y]
+            ;[p3x, p3y] = [w - p3x, h - p3y]
+            ;[p4x, p4y] = [w - p4x, h - p4y]
         }
 
         pathData = `M ${p1x} ${p1y} L ${p2x} ${p2y} L ${p3x} ${p3y} L ${p4x} ${p4y} Z`
@@ -858,10 +858,10 @@ export function getShapePath(shapType, w, h, node) {
             const name = shapAdjst[key]['attrs']['name']
             if (name === 'adj') {
               adj = parseInt(shapAdjst[key]['attrs']['fmla'].substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (name === 'hf') {
               hf = parseInt(shapAdjst[key]['attrs']['fmla'].substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (name === 'vf') {
               vf = parseInt(shapAdjst[key]['attrs']['fmla'].substring(4)) * RATIO_EMUs_Points
             }
@@ -914,7 +914,7 @@ export function getShapePath(shapType, w, h, node) {
             const name = shapAdjst[key]['attrs']['name']
             if (name === 'adj') {
               adj = parseInt(shapAdjst[key]['attrs']['fmla'].substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (name === 'hf') {
               hf = parseInt(shapAdjst[key]['attrs']['fmla'].substring(4)) * RATIO_EMUs_Points
             }
@@ -956,10 +956,10 @@ export function getShapePath(shapType, w, h, node) {
             const name = shapAdjst[key]['attrs']['name']
             if (name === 'adj') {
               adj = parseInt(shapAdjst[key]['attrs']['fmla'].substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (name === 'hf') {
               hf = parseInt(shapAdjst[key]['attrs']['fmla'].substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (name === 'vf') {
               vf = parseInt(shapAdjst[key]['attrs']['fmla'].substring(4)) * RATIO_EMUs_Points
             }
@@ -1060,7 +1060,7 @@ export function getShapePath(shapType, w, h, node) {
             const name = shapAdjst[key]['attrs']['name']
             if (name === 'adj') {
               adj = parseInt(shapAdjst[key]['attrs']['fmla'].substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (name === 'hf') {
               hf = parseInt(shapAdjst[key]['attrs']['fmla'].substring(4)) * RATIO_EMUs_Points
             }
@@ -1423,13 +1423,13 @@ export function getShapePath(shapType, w, h, node) {
           adj2 = 270
           H = h
           isClose = true
-        } 
+        }
         else if (shapType === 'pieWedge') {
           adj1 = 180
           adj2 = 270
           H = 2 * h
           isClose = true
-        } 
+        }
         else if (shapType === 'arc') {
           adj1 = 270
           adj2 = 0
@@ -1466,7 +1466,7 @@ export function getShapePath(shapType, w, h, node) {
             if (sAdj_name === 'adj1') {
               const sAdj1 = getTextByPathList(adj, ['attrs', 'fmla'])
               sAdj1_val = parseInt(sAdj1.substring(4)) / 60000
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               const sAdj2 = getTextByPathList(adj, ['attrs', 'fmla'])
               sAdj2_val = parseInt(sAdj2.substring(4)) / 60000
@@ -1565,7 +1565,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               sAdj1_val = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               sAdj2_val = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -1597,10 +1597,10 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 60000
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 60000
-            } 
+            }
             else if (sAdj_name === 'adj3') {
               adj3 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -1630,7 +1630,7 @@ export function getShapePath(shapType, w, h, node) {
           const dy1 = hd2 * (Math.sin(Math.atan(ht1 / wt1)))
           x1 = hc - dx1
           y1 = vc - dy1
-        } 
+        }
         else {
           const wt1 = wd2 * (Math.sin(stRd))
           const ht1 = hd2 * (Math.cos(stRd))
@@ -1650,7 +1650,7 @@ export function getShapePath(shapType, w, h, node) {
           const dy2 = ihd2 * (Math.sin(Math.atan(wt2 / ht2)))
           x2 = hc + dx2
           y2 = vc + dy2
-        } 
+        }
         else {
           const wt2 = iwd2 * (Math.sin((Math.PI) / 2 - istRd))
           const ht2 = ihd2 * (Math.cos((Math.PI) / 2 - istRd))
@@ -1699,7 +1699,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -1733,7 +1733,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -1841,7 +1841,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               sAdj1_val = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               sAdj2_val = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -2171,7 +2171,7 @@ export function getShapePath(shapType, w, h, node) {
               const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
               if (sAdj_name === 'adj1') {
                 adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
-              } 
+              }
               else if (sAdj_name === 'adj2') {
                 adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
               }
@@ -2278,7 +2278,7 @@ export function getShapePath(shapType, w, h, node) {
           const y3 = b - ch
           const y4 = b - ch2
           pathData = `M ${ch},${y3} L ${ch},${ch2} ${shapeArc(x3, ch2, ch2, ch2, 180, 270, false).replace('M', 'L')} L ${x7},${t} ${shapeArc(x7, ch2, ch2, ch2, 270, 450, false).replace('M', 'L')} L ${x6},${ch} L ${x6},${y4} ${shapeArc(x5, y4, ch2, ch2, 0, 90, false).replace('M', 'L')} L ${ch2},${b} ${shapeArc(ch2, y4, ch2, ch2, 90, 270, false).replace('M', 'L')} z M ${x3},${t} ${shapeArc(x3, ch2, ch2, ch2, 270, 450, false).replace('M', 'L')} ${shapeArc(x3, x3 / 2, ch4, ch4, 90, 270, false).replace('M', 'L')} L ${x4},${ch2} M ${x6},${ch} L ${x3},${ch} M ${ch},${y4} ${shapeArc(ch2, y4, ch2, ch2, 0, 270, false).replace('M', 'L')} ${shapeArc(ch2, (y4 + y3) / 2, ch4, ch4, 270, 450, false).replace('M', 'L')} z M ${ch},${y4} L ${ch},${y3}`
-        } 
+        }
         else if (shapType === 'horizontalScroll') {
           const y3 = ch + ch2
           const y4 = ch + ch
@@ -2302,7 +2302,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
             }
@@ -2341,7 +2341,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
             }
@@ -2387,10 +2387,10 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
-            } 
+            }
             else if (sAdj_name === 'adj3') {
               adj3 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
             }
@@ -2608,10 +2608,10 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
-            } 
+            }
             else if (sAdj_name === 'adj3') {
               adj3 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
             }
@@ -2659,7 +2659,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -2701,7 +2701,7 @@ export function getShapePath(shapType, w, h, node) {
           const y6 = b - hR
           const y7 = y1 - hR
           pathData = `M ${l},${b} L ${wd8},${y3} L ${l},${y4} L ${x2},${y4} L ${x2},${hR} ${shapeArc(x3, hR, wd32, hR, 180, 270, false).replace('M', 'L')} L ${x8},${t} ${shapeArc(x8, hR, wd32, hR, 270, 360, false).replace('M', 'L')} L ${x9},${y4} L ${r},${y4} L ${x10},${y3} L ${r},${b} L ${x7},${b} ${shapeArc(x7, y6, wd32, hR, 90, 270, false).replace('M', 'L')} L ${x8},${y1} ${shapeArc(x8, y7, wd32, hR, 90, -90, false).replace('M', 'L')} L ${x3},${y2} ${shapeArc(x3, y7, wd32, hR, 270, 90, false).replace('M', 'L')} L ${x4},${y1} ${shapeArc(x4, y6, wd32, hR, 270, 450, false).replace('M', 'L')} z M ${x5},${y2} L ${x5},${y6} M ${x6},${y6} L ${x6},${y2} M ${x2},${y7} L ${x2},${y4} M ${x9},${y4} L ${x9},${y7}`
-        } 
+        }
         else if (shapType === 'ribbon') {
           const y1 = h * a1 / cnstVal5
           const y2 = h * a1 / cnstVal4
@@ -2724,7 +2724,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -2767,7 +2767,7 @@ export function getShapePath(shapType, w, h, node) {
           const x13 = x12 + dx3
           const x14 = (x13 + x15) / 2
           pathData = `M ${x2},${y1} C ${x3},${y2} ${x4},${y3} ${x5},${y1} C ${x6},${y2} ${x7},${y3} ${x8},${y1} L ${x15},${y4} C ${x14},${y6} ${x13},${y5} ${x12},${y4} C ${x11},${y6} ${x10},${y5} ${x9},${y4} z`
-        } 
+        }
         else if (shapType === 'wave') {
           const cnstVal5 = 20000 * RATIO_EMUs_Points
           const a1 = (adj1 < 0) ? 0 : (adj1 > cnstVal5) ? cnstVal5 : adj1
@@ -2807,10 +2807,10 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj3') {
               adj3 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -2864,7 +2864,7 @@ export function getShapePath(shapType, w, h, node) {
           const cy6 = cy3 + rh
           const y7 = y1 + dy3
           pathData = `M ${l},${t} Q ${cx1},${cy1} ${x3},${y1} L ${x2},${y3} Q ${hc},${cy3} ${x5},${y3} L ${x4},${y1} Q ${cx2},${cy1} ${r},${t} L ${x6},${y2} L ${r},${rh} Q ${cx5},${cy4} ${x5},${y5} L ${x5},${y6} Q ${hc},${cy6} ${x2},${y6} L ${x2},${y5} Q ${cx4},${cy4} ${l},${rh} L ${wd8},${y2} z M ${x2},${y5} L ${x2},${y3} M ${x5},${y3} L ${x5},${y5} M ${x3},${y1} L ${x3},${y7} M ${x4},${y7} L ${x4},${y1}`
-        } 
+        }
         else if (shapType === 'ellipseRibbon2') {
           const u1 = f1 * q2
           const y1 = b - u1
@@ -2912,7 +2912,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               sAdj1_val = 0.5 - (parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 200000)
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               const sAdj2_val2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 100000
               sAdj2_val = 1 - (sAdj2_val2 / max_sAdj2_const)
@@ -2933,7 +2933,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               sAdj1_val = 0.5 - (parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 200000)
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               const sAdj2_val2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 100000
               sAdj2_val = sAdj2_val2 / max_sAdj2_const
@@ -2955,7 +2955,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               sAdj1_val = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 200000
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               const sAdj2_val2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 100000
               sAdj2_val = sAdj2_val2 / max_sAdj2_const
@@ -2980,7 +2980,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               sAdj1_val = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 200000
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               const sAdj2_val2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 100000
               sAdj2_val = sAdj2_val2 / max_sAdj2_const
@@ -3001,7 +3001,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               sAdj1_val = 0.5 - (parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 200000)
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               const sAdj2_val2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 100000
               sAdj2_val = sAdj2_val2 / max_sAdj2_const
@@ -3022,7 +3022,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               sAdj1_val = 0.5 - (parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 200000)
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               const sAdj2_val2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) / 100000
               sAdj2_val = sAdj2_val2 / max_sAdj2_const
@@ -3046,10 +3046,10 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj3') {
               adj3 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -3094,10 +3094,10 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj3') {
               adj3 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -3141,10 +3141,10 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj3') {
               adj3 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -3185,10 +3185,10 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj3') {
               adj3 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -3225,13 +3225,13 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj3') {
               adj3 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj4') {
               adj4 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -3342,7 +3342,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -3377,7 +3377,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * RATIO_EMUs_Points
             }
@@ -4047,7 +4047,7 @@ export function getShapePath(shapType, w, h, node) {
                 adj3 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4))
               }
             }
-          } 
+          }
           else {
             adj1 = parseInt(getTextByPathList(shapAdjst_ary, ['attrs', 'fmla']).substring(4))
           }
@@ -4112,7 +4112,7 @@ export function getShapePath(shapType, w, h, node) {
           const dly = h - ry
           const dry = h - ly
           pathData = `M ${x1},${y1} L ${x6},${y1} L ${lx},${ly} L ${rx},${ry} L ${rx6},${y1} L ${x8},${y1} L ${x8},${y2} L ${rx5},${y2} L ${rx4},${y3} L ${x8},${y3} L ${x8},${y4} L ${rx3},${y4} L ${drx},${dry} L ${dlx},${dly} L ${x3},${y4} L ${x1},${y4} L ${x1},${y3} L ${x4},${y3} L ${x5},${y2} L ${x1},${y2} z`
-        } 
+        }
         else if (shapType === 'mathDivide') {
           if (adj1 === undefined) adj1 = 23520
           if (adj2 === undefined) adj2 = 5880
@@ -4142,7 +4142,7 @@ export function getShapePath(shapType, w, h, node) {
           const x1 = hc - dx1
           const x3 = hc + dx1
           pathData = `M ${hc},${y1} A ${rad},${rad} 0 1,0 ${hc},${y1 + 2 * rad} A ${rad},${rad} 0 1,0 ${hc},${y1} z M ${hc},${y5} A ${rad},${rad} 0 1,1 ${hc},${y5 - 2 * rad} A ${rad},${rad} 0 1,1 ${hc},${y5} z M ${x1},${y3} L ${x3},${y3} L ${x3},${y4} L ${x1},${y4} z`
-        } 
+        }
         else if (shapType === 'mathEqual') {
           if (adj1 === undefined) adj1 = 23520
           if (adj2 === undefined) adj2 = 11760
@@ -4163,7 +4163,7 @@ export function getShapePath(shapType, w, h, node) {
           const x1 = hc - dx1
           const x2 = hc + dx1
           pathData = `M ${x1},${y1} L ${x2},${y1} L ${x2},${y2} L ${x1},${y2} z M ${x1},${y3} L ${x2},${y3} L ${x2},${y4} L ${x1},${y4} z`
-        } 
+        }
         else if (shapType === 'mathMinus') {
           if (adj1 === undefined) adj1 = 23520
           adj1 *= RATIO_EMUs_Points
@@ -4176,7 +4176,7 @@ export function getShapePath(shapType, w, h, node) {
           const x1 = hc - dx1
           const x2 = hc + dx1
           pathData = `M ${x1},${y1} L ${x2},${y1} L ${x2},${y2} L ${x1},${y2} z`
-        } 
+        }
         else if (shapType === 'mathMultiply') {
           if (adj1 === undefined) adj1 = 23520
           adj1 *= RATIO_EMUs_Points
@@ -4207,7 +4207,7 @@ export function getShapePath(shapType, w, h, node) {
           const yH = h - yB
           const yI = h - yC
           pathData = `M ${xA},${yA} L ${xB},${yB} L ${hc},${yC} L ${xD},${yB} L ${xE},${yA} L ${xF},${vc} L ${xE},${yG} L ${xD},${yH} L ${hc},${yI} L ${xB},${yH} L ${xA},${yG} L ${xL},${vc} z`
-        } 
+        }
         else if (shapType === 'mathPlus') {
           if (adj1 === undefined) adj1 = 23520
           adj1 *= RATIO_EMUs_Points
@@ -4279,7 +4279,7 @@ export function getShapePath(shapType, w, h, node) {
             const sAdj_name = getTextByPathList(adj, ['attrs', 'name'])
             if (sAdj_name === 'adj1') {
               adj1 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
-            } 
+            }
             else if (sAdj_name === 'adj2') {
               adj2 = parseInt(getTextByPathList(adj, ['attrs', 'fmla']).substring(4)) * refr
             }

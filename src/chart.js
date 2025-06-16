@@ -1,5 +1,5 @@
-import { eachElement, getTextByPathList } from './utils'
-import { applyTint } from './color'
+import { eachElement, getTextByPathList } from './utils.js'
+import { applyTint } from './color.js'
 
 function extractChartColors(serNode, warpObj) {
   if (serNode.constructor !== Array) serNode = [serNode]
@@ -42,7 +42,7 @@ function extractChartData(serNode) {
       return ''
     })
     dataMat.push(dataRow)
-  } 
+  }
   else {
     eachElement(serNode, (innerNode, index) => {
       const dataRow = []
@@ -54,7 +54,7 @@ function extractChartData(serNode) {
           rowNames[innerNode['attrs']['idx']] = innerNode['c:v']
           return ''
         })
-      } 
+      }
       else if (getTextByPathList(innerNode, ['c:cat', 'c:numRef', 'c:numCache', 'c:pt'])) {
         eachElement(innerNode['c:cat']['c:numRef']['c:numCache']['c:pt'], innerNode => {
           rowNames[innerNode['attrs']['idx']] = innerNode['c:v']

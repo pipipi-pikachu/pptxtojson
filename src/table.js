@@ -1,6 +1,6 @@
-import { getShapeFill, getSolidFill } from './fill'
-import { getTextByPathList } from './utils'
-import { getBorder } from './border'
+import { getShapeFill, getSolidFill } from './fill.js'
+import { getTextByPathList } from './utils.js'
+import { getBorder } from './border.js'
 
 export function getTableBorders(node, warpObj) {
   const borders = {}
@@ -58,7 +58,7 @@ export async function getTableCellParams(tcNode, thisTblStyle, cellSource, warpO
     const fill = await getShapeFill(cellObj, undefined, false, warpObj, 'slide')
 
     if (fill && fill.type === 'color' && fill.value) {
-      fillColor = fill.value 
+      fillColor = fill.value
     }
   }
   if (!fillColor) {

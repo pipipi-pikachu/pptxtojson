@@ -1,5 +1,5 @@
-import { getHorizontalAlign } from './align'
-import { getTextByPathList } from './utils'
+import { getHorizontalAlign } from './align.js'
+import { getTextByPathList } from './utils.js'
 
 import {
   getFontType,
@@ -40,7 +40,7 @@ export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, type, warpO
       if (brNode) {
         brNode = (brNode.constructor === Array) ? brNode : [brNode]
         brNode.forEach(item => item.type = 'br')
-  
+
         if (brNode.length > 1) brNode.shift()
         rNode = rNode.concat(brNode)
         rNode.sort((a, b) => {
@@ -72,7 +72,7 @@ export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, type, warpO
       }
       text += `<p style="text-align: ${align};">`
     }
-    
+
     if (!rNode) text += genSpanElement(pNode, spNode, textBodyNode, pFontStyle, slideLayoutSpNode, type, warpObj)
     else {
       for (const rNodeItem of rNode) {
@@ -92,7 +92,7 @@ export function getListType(node) {
 
   if (pPrNode['a:buChar']) return 'ul'
   if (pPrNode['a:buAutoNum']) return 'ol'
-  
+
   return ''
 }
 
@@ -136,6 +136,6 @@ export function genSpanElement(node, pNode, textBodyNode, pFontStyle, slideLayou
   if (linkID) {
     const linkURL = warpObj['slideResObj'][linkID]['target']
     return `<span style="${styleText}"><a href="${linkURL}" target="_blank">${text.replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;').replace(/\s/g, '&nbsp;')}</a></span>`
-  } 
+  }
   return `<span style="${styleText}">${text.replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;').replace(/\s/g, '&nbsp;')}</span>`
 }

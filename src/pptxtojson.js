@@ -1,22 +1,22 @@
 import JSZip from 'jszip'
-import { readXmlFile } from './readXmlFile'
-import { getBorder } from './border'
-import { getSlideBackgroundFill, getShapeFill, getSolidFill, getPicFill } from './fill'
-import { getChartInfo } from './chart'
-import { getVerticalAlign } from './align'
-import { getPosition, getSize } from './position'
-import { genTextBody } from './text'
-import { getCustomShapePath } from './shape'
-import { extractFileExtension, base64ArrayBuffer, getTextByPathList, angleToDegrees, getMimeType, isVideoLink, escapeHtml, hasValidText } from './utils'
-import { getShadow } from './shadow'
-import { getTableBorders, getTableCellParams, getTableRowParams } from './table'
-import { RATIO_EMUs_Points } from './constants'
-import { findOMath, latexFormart, parseOMath } from './math'
-import { getShapePath } from './shapePath'
+import { readXmlFile } from './readXmlFile.js'
+import { getBorder } from './border.js'
+import { getSlideBackgroundFill, getShapeFill, getSolidFill, getPicFill } from './fill.js'
+import { getChartInfo } from './chart.js'
+import { getVerticalAlign } from './align.js'
+import { getPosition, getSize } from './position.js'
+import { genTextBody } from './text.js'
+import { getCustomShapePath } from './shape.js'
+import { extractFileExtension, base64ArrayBuffer, getTextByPathList, angleToDegrees, getMimeType, isVideoLink, escapeHtml, hasValidText } from './utils.js'
+import { getShadow } from './shadow.js'
+import { getTableBorders, getTableCellParams, getTableRowParams } from './table.js'
+import { RATIO_EMUs_Points } from './constants.js'
+import { findOMath, latexFormart, parseOMath } from './math.js'
+import { getShapePath } from './shapePath.js'
 
 export async function parse(file) {
   const slides = []
-  
+
   const zip = await JSZip.loadAsync(file)
 
   const filesInfo = await getContentTypes(zip)
@@ -55,7 +55,7 @@ async function getContentTypes(zip) {
       default:
     }
   }
-  
+
   const sortSlideXml = (p1, p2) => {
     const n1 = +/(\d+)\.xml/.exec(p1)[1]
     const n2 = +/(\d+)\.xml/.exec(p2)[1]
@@ -63,7 +63,7 @@ async function getContentTypes(zip) {
   }
   slidesLocArray = slidesLocArray.sort(sortSlideXml)
   slideLayoutsLocArray = slideLayoutsLocArray.sort(sortSlideXml)
-  
+
   return {
     slides: slidesLocArray,
     slideLayouts: slideLayoutsLocArray,
@@ -93,7 +93,7 @@ async function getTheme(zip) {
         break
       }
     }
-  } 
+  }
   else if (relationshipArray['attrs']['Type'] === 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme') {
     themeURI = relationshipArray['attrs']['Target']
   }
@@ -118,7 +118,7 @@ async function processSingleSlide(zip, sldFileName, themeContent, defaultTextSty
   const resContent = await readXmlFile(zip, resName)
   let relationshipArray = resContent['Relationships']['Relationship']
   if (relationshipArray.constructor !== Array) relationshipArray = [relationshipArray]
-  
+
   let noteFilename = ''
   let layoutFilename = ''
   let masterFilename = ''
@@ -155,7 +155,7 @@ async function processSingleSlide(zip, sldFileName, themeContent, defaultTextSty
         }
     }
   }
-  
+
   const slideNotesContent = await readXmlFile(zip, noteFilename)
   const note = getNote(slideNotesContent)
 
@@ -319,7 +319,7 @@ async function getLayoutElements(warpObj) {
             if (ret) elements.push(ret)
           }
         }
-      } 
+      }
       else {
         const ph = getTextByPathList(nodesSldLayout[nodeKey], ['p:nvSpPr', 'p:nvPr', 'p:ph'])
         if (!ph) {
@@ -339,7 +339,7 @@ async function getLayoutElements(warpObj) {
             if (ret) elements.push(ret)
           }
         }
-      } 
+      }
       else {
         const ph = getTextByPathList(nodesSldMaster[nodeKey], ['p:nvSpPr', 'p:nvPr', 'p:ph'])
         if (!ph) {
@@ -375,7 +375,7 @@ function indexNodes(content) {
         if (idx) idxTable[idx] = targetNodeItem
         if (type) typeTable[type] = targetNodeItem
       }
-    } 
+    }
     else {
       const nvSpPrNode = targetNode['p:nvSpPr']
       const id = getTextByPathList(nvSpPrNode, ['p:cNvPr', 'attrs', 'id'])
@@ -449,7 +449,7 @@ async function processMathNode(node, warpObj, source) {
     type: 'math',
     top,
     left,
-    width, 
+    width,
     height,
     latex,
     picBase64,
@@ -527,7 +527,7 @@ async function processSpNode(node, pNode, warpObj, source) {
     if (idx) {
       slideLayoutSpNode = warpObj['slideLayoutTables']['typeTable'][type]
       slideMasterSpNode = warpObj['slideMasterTables']['typeTable'][type]
-    } 
+    }
     else {
       slideLayoutSpNode = warpObj['slideLayoutTables']['typeTable'][type]
       slideMasterSpNode = warpObj['slideMasterTables']['typeTable'][type]
@@ -583,7 +583,7 @@ async function genShape(node, pNode, slideLayoutSpNode, slideMasterSpNode, name,
   if (txtXframeNode) {
     const txtXframeRot = getTextByPathList(txtXframeNode, ['attrs', 'rot'])
     if (txtXframeRot) txtRotate = angleToDegrees(txtXframeRot) + 90
-  } 
+  }
   else txtRotate = rotate
 
   let content = ''
@@ -673,7 +673,7 @@ async function processPicNode(node, warpObj, source) {
   else resObj = warpObj['slideResObj']
 
   const order = node['attrs']['order']
-  
+
   const rid = node['p:blipFill']['a:blip']['attrs']['r:embed']
   const imgName = resObj[rid]['target']
   const imgFileExt = extractFileExtension(imgName).toLowerCase()
@@ -708,7 +708,7 @@ async function processPicNode(node, warpObj, source) {
     if (isVideoLink(videoFile)) {
       videoFile = escapeHtml(videoFile)
       isVdeoLink = true
-    } 
+    }
     else {
       videoFileExt = extractFileExtension(videoFile).toLowerCase()
       if (videoFileExt === 'mp4' || videoFileExt === 'webm' || videoFileExt === 'ogg') {
@@ -738,19 +738,19 @@ async function processPicNode(node, warpObj, source) {
       type: 'video',
       top,
       left,
-      width, 
+      width,
       height,
       rotate,
       blob: videoBlob,
       order,
     }
-  } 
+  }
   if (videoNode && isVdeoLink) {
     return {
       type: 'video',
       top,
       left,
-      width, 
+      width,
       height,
       rotate,
       src: videoFile,
@@ -762,7 +762,7 @@ async function processPicNode(node, warpObj, source) {
       type: 'audio',
       top,
       left,
-      width, 
+      width,
       height,
       rotate,
       blob: audioBlob,
@@ -787,7 +787,7 @@ async function processPicNode(node, warpObj, source) {
     type: 'image',
     top,
     left,
-    width, 
+    width,
     height,
     rotate,
     src,
@@ -805,7 +805,7 @@ async function processPicNode(node, warpObj, source) {
 
 async function processGraphicFrameNode(node, warpObj, source) {
   const graphicTypeUri = getTextByPathList(node, ['a:graphic', 'a:graphicData', 'attrs', 'uri'])
-  
+
   let result
   switch (graphicTypeUri) {
     case 'http://schemas.openxmlformats.org/drawingml/2006/table':
@@ -873,7 +873,7 @@ async function genTable(node, warpObj) {
             thisTblStyle = tbleStylList[k]
           }
         }
-      } 
+      }
       else {
         if (tbleStylList['attrs']['styleId'] === tbleStyleId) {
           thisTblStyle = tbleStylList
@@ -900,12 +900,12 @@ async function genTable(node, warpObj) {
 
   let trNodes = tableNode['a:tr']
   if (trNodes.constructor !== Array) trNodes = [trNodes]
-  
+
   const data = []
   const rowHeights = []
   for (let i = 0; i < trNodes.length; i++) {
     const trNode = trNodes[i]
-    
+
     const rowHeightParam = getTextByPathList(trNodes[i], ['attrs', 'h']) || 0
     const rowHeight = parseInt(rowHeightParam) * RATIO_EMUs_Points
     rowHeights.push(rowHeight)
@@ -927,12 +927,12 @@ async function genTable(node, warpObj) {
           a_sorce = 'a:firstCol'
           if (tblStylAttrObj['isLstRowAttr'] === 1 && i === (trNodes.length - 1) && getTextByPathList(thisTblStyle, ['a:seCell'])) {
             a_sorce = 'a:seCell'
-          } 
+          }
           else if (tblStylAttrObj['isFrstRowAttr'] === 1 && i === 0 &&
             getTextByPathList(thisTblStyle, ['a:neCell'])) {
             a_sorce = 'a:neCell'
           }
-        } 
+        }
         else if (
           (j > 0 && tblStylAttrObj['isBandColAttr'] === 1) &&
           !(tblStylAttrObj['isFrstColAttr'] === 1 && i === 0) &&
@@ -944,7 +944,7 @@ async function genTable(node, warpObj) {
             if (aBandNode === undefined) {
               aBandNode = getTextByPathList(thisTblStyle, ['a:band1V'])
               if (aBandNode) a_sorce = 'a:band2V'
-            } 
+            }
             else a_sorce = 'a:band2V'
           }
         }
@@ -952,7 +952,7 @@ async function genTable(node, warpObj) {
           a_sorce = 'a:lastCol'
           if (tblStylAttrObj['isLstRowAttr'] === 1 && i === (trNodes.length - 1) && getTextByPathList(thisTblStyle, ['a:swCell'])) {
             a_sorce = 'a:swCell'
-          } 
+          }
           else if (tblStylAttrObj['isFrstRowAttr'] === 1 && i === 0 && getTextByPathList(thisTblStyle, ['a:nwCell'])) {
             a_sorce = 'a:nwCell'
           }
@@ -971,18 +971,18 @@ async function genTable(node, warpObj) {
 
         tr.push(td)
       }
-    } 
+    }
     else {
       let a_sorce
       if (tblStylAttrObj['isFrstColAttr'] === 1 && tblStylAttrObj['isLstRowAttr'] !== 1) {
         a_sorce = 'a:firstCol'
-      } 
+      }
       else if (tblStylAttrObj['isBandColAttr'] === 1 && tblStylAttrObj['isLstRowAttr'] !== 1) {
         let aBandNode = getTextByPathList(thisTblStyle, ['a:band2V'])
         if (!aBandNode) {
           aBandNode = getTextByPathList(thisTblStyle, ['a:band1V'])
           if (aBandNode) a_sorce = 'a:band2V'
-        } 
+        }
         else a_sorce = 'a:band2V'
       }
       if (tblStylAttrObj['isLstColAttr'] === 1 && tblStylAttrObj['isLstRowAttr'] !== 1) {
@@ -1064,7 +1064,7 @@ async function genDiagram(node, warpObj) {
   const xfrmNode = getTextByPathList(node, ['p:xfrm'])
   const { left, top } = getPosition(xfrmNode, undefined, undefined)
   const { width, height } = getSize(xfrmNode, undefined, undefined)
-  
+
   const dgmDrwSpArray = getTextByPathList(warpObj['digramFileContent'], ['p:drawing', 'p:spTree', 'p:sp'])
   const elements = []
   if (dgmDrwSpArray) {

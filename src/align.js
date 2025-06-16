@@ -1,4 +1,4 @@
-import { getTextByPathList } from './utils'
+import { getTextByPathList } from './utils.js'
 
 export function getHorizontalAlign(node, pNode, type, warpObj) {
   let algn = getTextByPathList(node, ['a:pPr', 'attrs', 'algn'])
@@ -18,10 +18,10 @@ export function getHorizontalAlign(node, pNode, type, warpObj) {
       if (!algn && type === 'subTitle') {
         algn = getTextByPathList(warpObj, ['slideMasterTextStyles', 'p:bodyStyle', lvlStr, 'attrs', 'algn'])
       }
-    } 
+    }
     else if (type === 'body') {
       algn = getTextByPathList(warpObj, ['slideMasterTextStyles', 'p:bodyStyle', 'a:lvl1pPr', 'attrs', 'algn'])
-    } 
+    }
     else {
       algn = getTextByPathList(warpObj, ['slideMasterTables', 'typeTable', type, 'p:txBody', 'a:lstStyle', 'a:lvl1pPr', 'attrs', 'algn'])
     }

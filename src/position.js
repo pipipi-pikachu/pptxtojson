@@ -1,4 +1,4 @@
-import { RATIO_EMUs_Points } from './constants'
+import { RATIO_EMUs_Points } from './constants.js'
 
 export function getPosition(slideSpNode, slideLayoutSpNode, slideMasterSpNode) {
   let off

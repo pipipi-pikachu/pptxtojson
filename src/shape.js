@@ -1,4 +1,4 @@
-import { getTextByPathList } from './utils'
+import { getTextByPathList } from './utils.js'
 
 export function shapeArc(cX, cY, rX, rY, stAng, endAng, isClose) {
   let dData
@@ -14,7 +14,7 @@ export function shapeArc(cX, cY, rX, rY, stAng, endAng, isClose) {
       dData += ' L' + x + ' ' + y
       angle++
     }
-  } 
+  }
   else {
     while (angle > endAng) {
       const radians = angle * (Math.PI / 180)
@@ -158,12 +158,12 @@ export function getCustomShapePath(custShapType, w, h) {
         const spX = parseInt(multiSapeAry[k].x) * cX
         const spY = parseInt(multiSapeAry[k].y) * cY
         d += ' M' + spX + ',' + spY
-      } 
+      }
       else if (multiSapeAry[k].type === 'lnto') {
         const Lx = parseInt(multiSapeAry[k].x) * cX
         const Ly = parseInt(multiSapeAry[k].y) * cY
         d += ' L' + Lx + ',' + Ly
-      } 
+      }
       else if (multiSapeAry[k].type === 'cubicBezTo') {
         const Cx1 = parseInt(multiSapeAry[k].cubBzPt[0].x) * cX
         const Cy1 = parseInt(multiSapeAry[k].cubBzPt[0].y) * cY
@@ -172,7 +172,7 @@ export function getCustomShapePath(custShapType, w, h) {
         const Cx3 = parseInt(multiSapeAry[k].cubBzPt[2].x) * cX
         const Cy3 = parseInt(multiSapeAry[k].cubBzPt[2].y) * cY
         d += ' C' + Cx1 + ',' + Cy1 + ' ' + Cx2 + ',' + Cy2 + ' ' + Cx3 + ',' + Cy3
-      } 
+      }
       else if (multiSapeAry[k].type === 'arcTo') {
         const hR = parseInt(multiSapeAry[k].hR) * cX
         const wR = parseInt(multiSapeAry[k].wR) * cY

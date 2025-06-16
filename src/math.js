@@ -1,10 +1,10 @@
-import { getTextByPathList } from './utils'
+import { getTextByPathList } from './utils.js'
 
 export function findOMath(obj) {
   let results = []
   if (typeof obj !== 'object') return results
   if (obj['m:oMath']) results = results.concat(obj['m:oMath'])
-  
+
   Object.values(obj).forEach(value => {
     if (Array.isArray(value) || typeof value === 'object') {
       results = results.concat(findOMath(value))

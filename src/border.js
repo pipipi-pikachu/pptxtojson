@@ -1,6 +1,6 @@
 import tinycolor from 'tinycolor2'
-import { getSchemeColorFromTheme } from './schemeColor'
-import { getTextByPathList } from './utils'
+import { getSchemeColorFromTheme } from './schemeColor.js'
+import { getTextByPathList } from './utils.js'
 
 export function getBorder(node, elType, warpObj) {
   let lineNode = getTextByPathList(node, ['p:spPr', 'a:ln'])
@@ -39,7 +39,7 @@ export function getBorder(node, elType, warpObj) {
 
       if (shade) {
         shade = parseInt(shade) / 100000
-        
+
         const color = tinycolor('#' + borderColor).toHsl()
         borderColor = tinycolor({ h: color.h, s: color.s, l: color.l * shade, a: color.a }).toHex()
       }

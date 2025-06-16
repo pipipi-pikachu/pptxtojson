@@ -1,4 +1,4 @@
-import { getTextByPathList } from './utils'
+import { getTextByPathList } from './utils.js'
 
 export function getSchemeColorFromTheme(schemeClr, warpObj, clrMap, phClr) {
   let color

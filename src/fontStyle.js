@@ -1,6 +1,6 @@
-import { getTextByPathList } from './utils'
-import { getShadow } from './shadow'
-import { getFillType, getSolidFill } from './fill'
+import { getTextByPathList } from './utils.js'
+import { getShadow } from './shadow.js'
+import { getFillType, getSolidFill } from './fill.js'
 
 export function getFontType(node, type, warpObj) {
   let typeface = getTextByPathList(node, ['a:rPr', 'a:latin', 'attrs', 'typeface'])
@@ -10,10 +10,10 @@ export function getFontType(node, type, warpObj) {
 
     if (type === 'title' || type === 'subTitle' || type === 'ctrTitle') {
       typeface = getTextByPathList(fontSchemeNode, ['a:majorFont', 'a:latin', 'attrs', 'typeface'])
-    } 
+    }
     else if (type === 'body') {
       typeface = getTextByPathList(fontSchemeNode, ['a:minorFont', 'a:latin', 'attrs', 'typeface'])
-    } 
+    }
     else {
       typeface = getTextByPathList(fontSchemeNode, ['a:minorFont', 'a:latin', 'attrs', 'typeface'])
     }
@@ -62,13 +62,13 @@ export function getFontSize(node, slideLayoutSpNode, type, slideMasterTextStyles
     let sz
     if (type === 'title' || type === 'subTitle' || type === 'ctrTitle') {
       sz = getTextByPathList(slideMasterTextStyles, ['p:titleStyle', 'a:lvl1pPr', 'a:defRPr', 'attrs', 'sz'])
-    } 
+    }
     else if (type === 'body') {
       sz = getTextByPathList(slideMasterTextStyles, ['p:bodyStyle', 'a:lvl1pPr', 'a:defRPr', 'attrs', 'sz'])
-    } 
+    }
     else if (type === 'dt' || type === 'sldNum') {
       sz = '1200'
-    } 
+    }
     else if (!type) {
       sz = getTextByPathList(slideMasterTextStyles, ['p:otherStyle', 'a:lvl1pPr', 'a:defRPr', 'attrs', 'sz'])
     }

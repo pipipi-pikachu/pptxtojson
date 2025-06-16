@@ -1,5 +1,5 @@
-import { getSolidFill } from './fill'
-import { RATIO_EMUs_Points } from './constants'
+import { getSolidFill } from './fill.js'
+import { RATIO_EMUs_Points } from './constants.js'
 
 export function getShadow(node, warpObj) {
   const chdwClrNode = getSolidFill(node, undefined, undefined, warpObj)
