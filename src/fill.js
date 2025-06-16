@@ -1,5 +1,6 @@
 import tinycolor from 'tinycolor2'
 import { getSchemeColorFromTheme } from './schemeColor'
+import { BASE64_ERROR_IMG } from './constants.js'
 import {
   applyShade,
   applyTint,
@@ -34,7 +35,14 @@ export function getFillType(node) {
 
 export async function getPicFill(type, node, warpObj) {
   let img
-  const rId = node['a:blip']['attrs']['r:embed']
+  let rId
+  try {
+    rId = node['a:blip']['attrs']['r:embed']
+  } catch (err) {
+    console.warn(err)
+    console.warn('Found an image fill that could not be parsed correctly.')
+    return BASE64_ERROR_IMG
+  }
   let imgPath
   if (type === 'slideBg' || type === 'slide') {
     imgPath = getTextByPathList(warpObj, ['slideResObj', rId, 'target'])
