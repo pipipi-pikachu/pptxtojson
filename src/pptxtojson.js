@@ -373,7 +373,10 @@ function indexNodes(content) {
 
         if (id) idTable[id] = targetNodeItem
         if (idx) idxTable[idx] = targetNodeItem
-        if (type) typeTable[type] = targetNodeItem
+        if (type) {
+          const compositeKey = idx ? `${type}_${idx}` : type
+          typeTable[compositeKey] = targetNodeItem
+        }
       }
     } 
     else {
@@ -384,7 +387,10 @@ function indexNodes(content) {
 
       if (id) idTable[id] = targetNode
       if (idx) idxTable[idx] = targetNode
-      if (type) typeTable[type] = targetNode
+      if (type) {
+        const compositeKey = idx ? `${type}_${idx}` : type
+        typeTable[compositeKey] = targetNode
+      }
     }
   }
 
@@ -524,11 +530,12 @@ async function processSpNode(node, pNode, warpObj, source) {
   let slideLayoutSpNode, slideMasterSpNode
 
   if (type) {
-    if (idx) {
-      slideLayoutSpNode = warpObj['slideLayoutTables']['typeTable'][type]
-      slideMasterSpNode = warpObj['slideMasterTables']['typeTable'][type]
-    } 
-    else {
+    const compositeKey = idx ? `${type}_${idx}` : type
+    slideLayoutSpNode = warpObj['slideLayoutTables']['typeTable'][compositeKey]
+    slideMasterSpNode = warpObj['slideMasterTables']['typeTable'][compositeKey]
+
+    // 向后兼容：如果组合键找不到，尝试单独的 type
+    if (!slideLayoutSpNode && idx) {
       slideLayoutSpNode = warpObj['slideLayoutTables']['typeTable'][type]
       slideMasterSpNode = warpObj['slideMasterTables']['typeTable'][type]
     }
