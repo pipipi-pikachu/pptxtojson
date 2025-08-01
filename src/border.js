@@ -3,19 +3,27 @@ import { getSchemeColorFromTheme } from './schemeColor'
 import { getTextByPathList } from './utils'
 
 export function getBorder(node, elType, warpObj) {
-  let lineNode = getTextByPathList(node, ['p:spPr', 'a:ln'])
-  if (!lineNode) {
-    const lnRefNode = getTextByPathList(node, ['p:style', 'a:lnRef'])
-    if (lnRefNode) {
-      const lnIdx = getTextByPathList(lnRefNode, ['attrs', 'idx'])
-      lineNode = warpObj['themeContent']['a:theme']['a:themeElements']['a:fmtScheme']['a:lnStyleLst']['a:ln'][Number(lnIdx) - 1]
-    }
+  let defaultLineNode = null
+  const lnRefNode = getTextByPathList(node, ['p:style', 'a:lnRef'])
+  if (lnRefNode) {
+    const lnIdx = getTextByPathList(lnRefNode, ['attrs', 'idx'])
+    defaultLineNode = warpObj['themeContent']['a:theme']['a:themeElements']['a:fmtScheme']['a:lnStyleLst']['a:ln'][Number(lnIdx) - 1]
   }
+  const defaultBorderWidth = defaultLineNode && !getTextByPathList(defaultLineNode, ['a:noFill']) ? (parseInt(getTextByPathList(defaultLineNode, ['attrs', 'w'])) / 12700) : 0
+  let lineNode = getTextByPathList(node, ['p:spPr', 'a:ln'])
+  // if (!lineNode) {
+  //   const lnRefNode = getTextByPathList(node, ['p:style', 'a:lnRef'])
+  //   if (lnRefNode) {
+  //     const lnIdx = getTextByPathList(lnRefNode, ['attrs', 'idx'])
+  //     lineNode = warpObj['themeContent']['a:theme']['a:themeElements']['a:fmtScheme']['a:lnStyleLst']['a:ln'][Number(lnIdx) - 1]
+  //   }
+  // }
   if (!lineNode) lineNode = node
 
   const isNoFill = getTextByPathList(lineNode, ['a:noFill'])
 
-  let borderWidth = isNoFill ? 0 : (parseInt(getTextByPathList(lineNode, ['attrs', 'w'])) / 12700)
+  const lineWidth = getTextByPathList(lineNode, ['attrs', 'w'])
+  let borderWidth = isNoFill ? 0 : lineWidth ? (parseInt(lineWidth) / 12700) : defaultBorderWidth
   if (isNaN(borderWidth)) {
     if (lineNode) borderWidth = 0
     else if (elType !== 'obj') borderWidth = 0
