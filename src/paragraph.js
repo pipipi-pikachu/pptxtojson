@@ -176,11 +176,22 @@ function getParagraphStyleNodes(pNode, textBodyNode, slideLayoutSpNode, slideMas
   return styleNodes
 }
 
+// PPT `<a:lnSpc><a:spcPct val="N"/>` is a percent of "single-line-spacing",
+// not a percent of font-size. Single-line-spacing is the font's natural line
+// height (ascent + descent + leading) and is roughly 1.2 * font-size for the
+// fonts PowerPoint ships with. Emitting the raw percentage as a unitless CSS
+// `line-height` collapses every paragraph by ~20%, which breaks slides that
+// overlay absolute-positioned shapes onto specific text lines (e.g. poem-pause
+// connectors floating below the last text line). Bake the leading factor in
+// before returning so HTML consumers get the same vertical rhythm PowerPoint
+// renders.
+const SINGLE_LINE_SPACING_LEADING = 1.2
+
 function getLineSpacingValue(spacingNode) {
   const spcPct = getTextByPathList(spacingNode, ['a:spcPct', 'attrs', 'val'])
   const spcPts = getTextByPathList(spacingNode, ['a:spcPts', 'attrs', 'val'])
 
-  if (spcPct) return parseInt(spcPct) / 1000 / 100
+  if (spcPct) return (parseInt(spcPct) / 1000 / 100) * SINGLE_LINE_SPACING_LEADING
   if (spcPts) return parseInt(spcPts) / 100 + 'pt'
 
   return undefined
