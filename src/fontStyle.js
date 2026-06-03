@@ -87,11 +87,125 @@ function getFontAttr(styleNodes, attrName) {
 
 function getFontTypeface(styleNodes) {
   for (const styleNode of styleNodes) {
-    const typeface = getTextByPathList(styleNode, ['a:latin', 'attrs', 'typeface']) || getTextByPathList(styleNode, ['a:ea', 'attrs', 'typeface'])
-    if (typeface) return typeface
+    const eaTypeface = getTextByPathList(styleNode, ['a:ea', 'attrs', 'typeface'])
+    const latinTypeface = getTextByPathList(styleNode, ['a:latin', 'attrs', 'typeface'])
+    // 优先使用 a:ea（东亚字体），对中文内容更准确
+    const typeface = eaTypeface || latinTypeface
+    if (typeface) return buildFontFamily(typeface)
   }
 
   return ''
+}
+
+// ---- 字体分类 ----
+const FontCategory = {
+  SANS_SERIF: 'sans-serif',
+  SERIF: 'serif',
+  MONOSPACE: 'monospace',
+  CURSIVE: 'cursive',
+  FANTASY: 'fantasy',
+}
+
+// 已知字体分类映射
+const FONT_CATEGORY_MAP = {
+  // 无衬线
+  '微软雅黑': FontCategory.SANS_SERIF, 'Microsoft YaHei': FontCategory.SANS_SERIF,
+  'MicrosoftYaHei': FontCategory.SANS_SERIF, 'Microsoft YaHei Light': FontCategory.SANS_SERIF,
+  '黑体': FontCategory.SANS_SERIF, 'SimHei': FontCategory.SANS_SERIF,
+  '华文细黑': FontCategory.SANS_SERIF, 'STXiHei': FontCategory.SANS_SERIF,
+  '等线': FontCategory.SANS_SERIF, 'DengXian': FontCategory.SANS_SERIF,
+  '思源黑体': FontCategory.SANS_SERIF, 'Source Han Sans': FontCategory.SANS_SERIF,
+  '阿里巴巴普惠体': FontCategory.SANS_SERIF, 'MiSans': FontCategory.SANS_SERIF,
+  '得意黑': FontCategory.SANS_SERIF, '优设标题黑': FontCategory.SANS_SERIF,
+  '峰广明锐体': FontCategory.SANS_SERIF, '摄图摩登小方体': FontCategory.SANS_SERIF,
+  '素材集市酷方体': FontCategory.SANS_SERIF, '锐字真言体': FontCategory.SANS_SERIF,
+  'Arial': FontCategory.SANS_SERIF, 'Helvetica': FontCategory.SANS_SERIF,
+  'Segoe UI': FontCategory.SANS_SERIF, 'Calibri': FontCategory.SANS_SERIF,
+  'Inter': FontCategory.SANS_SERIF, 'Roboto': FontCategory.SANS_SERIF,
+  'Open Sans': FontCategory.SANS_SERIF, 'Montserrat': FontCategory.SANS_SERIF,
+  // 衬线
+  '宋体': FontCategory.SERIF, 'SimSun': FontCategory.SERIF,
+  'NSimSun': FontCategory.SERIF, '新宋体': FontCategory.SERIF,
+  '楷体': FontCategory.SERIF, 'KaiTi': FontCategory.SERIF,
+  'KaiTi_GB2312': FontCategory.SERIF,
+  '仿宋': FontCategory.SERIF, 'FangSong': FontCategory.SERIF,
+  'FangSong_GB2312': FontCategory.SERIF,
+  '华文楷体': FontCategory.SERIF, 'STKaiti': FontCategory.SERIF,
+  '华文宋体': FontCategory.SERIF, 'STSong': FontCategory.SERIF,
+  '华文仿宋': FontCategory.SERIF, 'STFangSong': FontCategory.SERIF,
+  '思源宋体': FontCategory.SERIF, 'Source Han Serif': FontCategory.SERIF,
+  '文鼎PL宋体': FontCategory.SERIF, '文鼎PL楷体': FontCategory.SERIF,
+  '朱雀仿宋': FontCategory.SERIF, '霞鹜文楷': FontCategory.SERIF,
+  'Times New Roman': FontCategory.SERIF, 'Georgia': FontCategory.SERIF,
+  'Merriweather': FontCategory.SERIF, 'Literata': FontCategory.SERIF,
+  // 等宽
+  'Courier New': FontCategory.MONOSPACE, 'Consolas': FontCategory.MONOSPACE,
+  'JetBrains Mono': FontCategory.MONOSPACE,
+  // 手写/装饰
+  '仓耳小丸子': FontCategory.CURSIVE, '喵喵奶糖': FontCategory.CURSIVE,
+  '糯米奶团体': FontCategory.CURSIVE, '站酷快乐体': FontCategory.CURSIVE,
+  '字制区喜脉体': FontCategory.CURSIVE, '素材集市康康体': FontCategory.CURSIVE,
+  '途牛类圆体': FontCategory.FANTASY,
+}
+
+// ---- 字体别名映射 ----
+// key: PPT中的原始字体名
+// value: 风格最接近的可用 web font 名（即 PPTist 中 @font-face 注册的字体名）
+// 用途: 当某个字体没有本地安装时，优先用这个 web font 替代，而不是只按分类回退
+const FONT_ALIAS_MAP = {
+  // WPS 装饰字体 → 风格接近的开源字体
+  '喵喵奶糖': 'SucaiJishiKangkang',
+  '糯米奶团体': 'SucaiJishiKangkang',
+  '素材集市康康体': 'SucaiJishiKangkang',
+  '苍耳粗体': 'SucaiJishiKangkang',       // 和喵喵奶糖风格接近
+  '素材集市酷方体': 'SucaiJishiCoolSquare',
+  '仓耳小丸子': 'CangerXiaowanzi',
+  '途牛类圆体': 'TuniuRounded',
+  '站酷快乐体': 'ZcoolHappy',
+  '字制区喜脉体': 'ZizhiQuXiMai',
+  '锐字真言体': 'RuiziZhenyan',
+  // 英文字体替代
+  'Times New Roman': 'Merriweather',
+  'Arial': 'Inter',
+  'Calibri': 'OpenSans',
+  'Courier New': 'JetBrainsMono',
+}
+
+// 每个分类的回退字体链
+const CATEGORY_FALLBACK = {
+  [FontCategory.SANS_SERIF]: '"Microsoft YaHei", "SourceHanSans", sans-serif',
+  [FontCategory.SERIF]: '"SimSun", "SourceHanSerif", serif',
+  [FontCategory.MONOSPACE]: '"JetBrains Mono", "Consolas", monospace',
+  [FontCategory.CURSIVE]: '"LXGWWenKai", "KaiTi", cursive',
+  [FontCategory.FANTASY]: '"CangerXiaowanzi", "Microsoft YaHei", fantasy',
+}
+
+// 推断字体分类
+function inferFontCategory(fontName) {
+  if (FONT_CATEGORY_MAP[fontName]) return FONT_CATEGORY_MAP[fontName]
+  if (/黑|hei|sans|gothic|grotesk/i.test(fontName)) return FontCategory.SANS_SERIF
+  if (/宋|song|serif|roman|明朝|mincho/i.test(fontName)) return FontCategory.SERIF
+  if (/楷|kai|仿|fang/i.test(fontName)) return FontCategory.SERIF
+  if (/mono|consol|courier|code/i.test(fontName.toLowerCase())) return FontCategory.MONOSPACE
+  if (/手写|行|草|cursive|hand|script|calligrap/i.test(fontName)) return FontCategory.CURSIVE
+  if (/圆|艺术|装饰|fantasy|fun|happy|可爱|胖|童|cool/i.test(fontName)) return FontCategory.FANTASY
+  return FontCategory.SANS_SERIF
+}
+
+// 生成完整的 CSS font-family 回退链
+// 流程: 原始字体名 → 别名web font → 分类回退链
+// 例: "苍耳粗体" → "苍耳粗体", "SucaiJishiKangkang", "LXGWWenKai", "KaiTi", cursive
+function buildFontFamily(fontName) {
+  if (!fontName) return ''
+  // 跳过 theme 占位符
+  if (fontName.startsWith('+')) return ''
+  const category = inferFontCategory(fontName)
+  const fallback = CATEGORY_FALLBACK[category]
+  const alias = FONT_ALIAS_MAP[fontName]
+  if (alias) {
+    return `"${fontName}", "${alias}", ${fallback}`
+  }
+  return `"${fontName}", ${fallback}`
 }
 
 function getColorFromNode(node, warpObj) {
@@ -131,37 +245,33 @@ function getTextShadowFromStyleNodes(styleNodes, warpObj) {
 
 export function getFontType(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl, warpObj) {
   const styleNodes = getFontStyleNodes(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl)
-  let typeface = getFontTypeface(styleNodes)
+  const typeface = getFontTypeface(styleNodes)
 
-  if (!typeface || typeface.startsWith('+')) {
+  if (!typeface) {
     const fontSchemeNode = getTextByPathList(warpObj['themeContent'], ['a:theme', 'a:themeElements', 'a:fontScheme'])
 
     if (fontSchemeNode) {
-      if (typeface && typeface.startsWith('+')) {
-        switch (typeface) {
-          case '+mj-lt': 
-            return getTextByPathList(fontSchemeNode, ['a:majorFont', 'a:latin', 'attrs', 'typeface'])
-          case '+mn-lt': 
-            return getTextByPathList(fontSchemeNode, ['a:minorFont', 'a:latin', 'attrs', 'typeface'])
-          case '+mj-ea': 
-            return getTextByPathList(fontSchemeNode, ['a:majorFont', 'a:ea', 'attrs', 'typeface'])
-          case '+mn-ea': 
-            return getTextByPathList(fontSchemeNode, ['a:minorFont', 'a:ea', 'attrs', 'typeface'])
-          default: 
-            return typeface.replace(/^\+/, '')
-        }
+      let schemeTypeface = ''
+      // 优先取东亚字体，对中文内容更准确
+      const eaMajor = getTextByPathList(fontSchemeNode, ['a:majorFont', 'a:ea', 'attrs', 'typeface'])
+      const eaMinor = getTextByPathList(fontSchemeNode, ['a:minorFont', 'a:ea', 'attrs', 'typeface'])
+      const ltMajor = getTextByPathList(fontSchemeNode, ['a:majorFont', 'a:latin', 'attrs', 'typeface'])
+      const ltMinor = getTextByPathList(fontSchemeNode, ['a:minorFont', 'a:latin', 'attrs', 'typeface'])
+
+      if (type === 'title' || type === 'subTitle' || type === 'ctrTitle') {
+        schemeTypeface = eaMajor || ltMajor || ''
       }
+      else {
+        schemeTypeface = eaMinor || ltMinor || ''
+      }
+
+      if (schemeTypeface) return buildFontFamily(schemeTypeface)
     }
 
-    if (type === 'title' || type === 'subTitle' || type === 'ctrTitle') {
-      typeface = getTextByPathList(fontSchemeNode, ['a:majorFont', 'a:latin', 'attrs', 'typeface']) || getTextByPathList(fontSchemeNode, ['a:majorFont', 'a:ea', 'attrs', 'typeface'])
-    }
-    else {
-      typeface = getTextByPathList(fontSchemeNode, ['a:minorFont', 'a:latin', 'attrs', 'typeface'])
-    }
+    return ''
   }
 
-  return typeface || ''
+  return typeface
 }
 
 export function getFontColor(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl, pFontStyle, warpObj) {
