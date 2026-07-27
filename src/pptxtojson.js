@@ -8,7 +8,7 @@ import { getTextInsets } from './textInsets'
 import { getPosition, getSize } from './position'
 import { genTextBody, getTextNodeValue } from './text'
 import { getCustomShapePath, identifyShape, isStrokeOnlyCustomGeometry } from './shape'
-import { extractFileExtension, getTextByPathList, angleToDegrees, isVideoLink, escapeHtml, hasValidText, numberToFixed } from './utils'
+import { extractFileExtension, getTextByPathList, angleToDegrees, isVideoLink, escapeHtml, hasValidText, numberToFixed, isOoxmlTrue } from './utils'
 import { getShadow } from './shadow'
 import { getTableBorders, getTableCellParams, getTableRowParams } from './table'
 import { RATIO_EMUs_Points } from './constants'
@@ -613,8 +613,8 @@ async function processGroupSpNode(node, warpObj, source, parentGroupHierarchy = 
   const chcx = parseInt(xfrmNode['a:chExt']['attrs']['cx']) * RATIO_EMUs_Points
   const chcy = parseInt(xfrmNode['a:chExt']['attrs']['cy']) * RATIO_EMUs_Points
 
-  const isFlipV = getTextByPathList(xfrmNode, ['attrs', 'flipV']) === '1'
-  const isFlipH = getTextByPathList(xfrmNode, ['attrs', 'flipH']) === '1'
+  const isFlipV = isOoxmlTrue(getTextByPathList(xfrmNode, ['attrs', 'flipV']))
+  const isFlipH = isOoxmlTrue(getTextByPathList(xfrmNode, ['attrs', 'flipH']))
 
   let rotate = getTextByPathList(xfrmNode, ['attrs', 'rot']) || 0
   if (rotate) rotate = angleToDegrees(rotate)
@@ -725,7 +725,7 @@ async function processSpNode(node, warpObj, source, groupHierarchy = []) {
 
   if (!type) {
     const txBoxVal = getTextByPathList(node, ['p:nvSpPr', 'p:cNvSpPr', 'attrs', 'txBox'])
-    if (txBoxVal === '1') type = 'text'
+    if (isOoxmlTrue(txBoxVal)) type = 'text'
   }
   if (!type) type = getTextByPathList(slideLayoutSpNode, ['p:nvSpPr', 'p:nvPr', 'p:ph', 'attrs', 'type'])
   if (!type) type = getTextByPathList(slideMasterSpNode, ['p:nvSpPr', 'p:nvPr', 'p:ph', 'attrs', 'type'])
@@ -779,8 +779,8 @@ async function genShape(node, slideLayoutSpNode, slideMasterSpNode, name, type, 
   const { width, height } = getSize(slideXfrmNode, slideLayoutXfrmNode, slideMasterXfrmNode)
   const pathViewBox = { x: 0, y: 0, width, height }
 
-  const isFlipV = getTextByPathList(slideXfrmNode, ['attrs', 'flipV']) === '1'
-  const isFlipH = getTextByPathList(slideXfrmNode, ['attrs', 'flipH']) === '1'
+  const isFlipV = isOoxmlTrue(getTextByPathList(slideXfrmNode, ['attrs', 'flipV']))
+  const isFlipH = isOoxmlTrue(getTextByPathList(slideXfrmNode, ['attrs', 'flipH']))
 
   const rotate = angleToDegrees(getTextByPathList(slideXfrmNode, ['attrs', 'rot']))
 
@@ -807,6 +807,9 @@ async function genShape(node, slideLayoutSpNode, slideMasterSpNode, name, type, 
   if (outerShdwNode) shadow = getShadow(outerShdwNode, warpObj)
 
   const vAlign = getVerticalAlign(node, slideLayoutSpNode, slideMasterSpNode, type)
+  // Vertical (East-Asian) writing mode. Read once here and reported on every branch below: a
+  // <a:bodyPr vert="eaVert"> is just as valid on a shape as on a plain text box, and dropping it
+  // for shapes leaves the consumer laying that text out horizontally.
   const isVertical = getTextByPathList(node, ['p:txBody', 'a:bodyPr', 'attrs', 'vert']) === 'eaVert'
   const autoFit = getTextAutoFit(node, slideLayoutSpNode, slideMasterSpNode)
   const textInset = getTextInsets(node, slideLayoutSpNode, slideMasterSpNode)
@@ -849,6 +852,7 @@ async function genShape(node, slideLayoutSpNode, slideMasterSpNode, name, type, 
     const customShapeData = {
       ...data,
       type: 'shape',
+      isVertical,
       shapType: 'custom',
       path: d,
       pathViewBox: { x: 0, y: 0, width: w, height: h },
@@ -868,6 +872,7 @@ async function genShape(node, slideLayoutSpNode, slideMasterSpNode, name, type, 
     const shapeData = {
       ...data,
       type: 'shape',
+      isVertical,
       shapType,
       path: shapePath,
       pathViewBox,
@@ -880,6 +885,7 @@ async function genShape(node, slideLayoutSpNode, slideMasterSpNode, name, type, 
     const shapeData = {
       ...data,
       type: 'shape',
+      isVertical,
       content: '',
       shapType,
       path: shapePath,
@@ -923,8 +929,8 @@ async function processPicNode(node, warpObj, source) {
   const { width, height } = getSize(xfrmNode, undefined, undefined)
   const imageData = await getImageData(imgName, warpObj)
 
-  const isFlipV = getTextByPathList(xfrmNode, ['attrs', 'flipV']) === '1'
-  const isFlipH = getTextByPathList(xfrmNode, ['attrs', 'flipH']) === '1'
+  const isFlipV = isOoxmlTrue(getTextByPathList(xfrmNode, ['attrs', 'flipV']))
+  const isFlipH = isOoxmlTrue(getTextByPathList(xfrmNode, ['attrs', 'flipH']))
 
   let rotate = 0
   const rotateNode = getTextByPathList(node, ['p:spPr', 'a:xfrm', 'attrs', 'rot'])
@@ -1129,12 +1135,12 @@ async function genTable(node, warpObj) {
   const bandRowAttr = getTblPr['attrs'] ? getTblPr['attrs']['bandRow'] : undefined
   const bandColAttr = getTblPr['attrs'] ? getTblPr['attrs']['bandCol'] : undefined
   const tblStylAttrObj = {
-    isFrstRowAttr: (firstRowAttr && firstRowAttr === '1') ? 1 : 0,
-    isFrstColAttr: (firstColAttr && firstColAttr === '1') ? 1 : 0,
-    isLstRowAttr: (lastRowAttr && lastRowAttr === '1') ? 1 : 0,
-    isLstColAttr: (lastColAttr && lastColAttr === '1') ? 1 : 0,
-    isBandRowAttr: (bandRowAttr && bandRowAttr === '1') ? 1 : 0,
-    isBandColAttr: (bandColAttr && bandColAttr === '1') ? 1 : 0,
+    isFrstRowAttr: isOoxmlTrue(firstRowAttr) ? 1 : 0,
+    isFrstColAttr: isOoxmlTrue(firstColAttr) ? 1 : 0,
+    isLstRowAttr: isOoxmlTrue(lastRowAttr) ? 1 : 0,
+    isLstColAttr: isOoxmlTrue(lastColAttr) ? 1 : 0,
+    isBandRowAttr: isOoxmlTrue(bandRowAttr) ? 1 : 0,
+    isBandColAttr: isOoxmlTrue(bandColAttr) ? 1 : 0,
   }
 
   let thisTblStyle

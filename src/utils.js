@@ -1,3 +1,11 @@
+// Attributes like rPr@b, xfrm@flipH and cNvSpPr@txBox are xsd:boolean, whose lexical space is
+// `1` / `0` / `true` / `false` — all four are valid. PowerPoint writes the numeric form, so testing
+// only for '1' appears to work, but other producers emit the literal form and then every bold run,
+// italic, flip and text-box flag in the file reads as false.
+export function isOoxmlTrue(value) {
+  return value === '1' || value === 'true'
+}
+
 export function base64ArrayBuffer(arrayBuffer) {
   const encodings = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
   const bytes = new Uint8Array(arrayBuffer)

@@ -1,4 +1,4 @@
-import { getTextByPathList } from './utils'
+import { getTextByPathList, isOoxmlTrue } from './utils'
 import { getShadow } from './shadow'
 import { getFillType, getGradientFill, getSolidFill } from './fill'
 
@@ -203,12 +203,12 @@ export function getFontSize(node, pNode, textBodyNode, slideLayoutSpNode, slideM
 
 export function getFontBold(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl) {
   const styleNodes = getFontStyleNodes(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl)
-  return getFontAttr(styleNodes, 'b') === '1' ? 'bold' : ''
+  return isOoxmlTrue(getFontAttr(styleNodes, 'b')) ? 'bold' : ''
 }
 
 export function getFontItalic(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl) {
   const styleNodes = getFontStyleNodes(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl)
-  return getFontAttr(styleNodes, 'i') === '1' ? 'italic' : ''
+  return isOoxmlTrue(getFontAttr(styleNodes, 'i')) ? 'italic' : ''
 }
 
 export function getFontDecoration(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl) {

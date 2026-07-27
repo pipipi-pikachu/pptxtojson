@@ -763,8 +763,15 @@ async function resolveShapeFillFromNode(node, warpObj, source, groupHierarchy) {
     return groupFill ? { state: 'found', fill: groupFill } : { state: 'none' }
   }
   if (!fillValue) {
-    const clrName = getTextByPathList(node, ['p:style', 'a:fillRef'])
-    fillValue = getSolidFill(clrName, undefined, undefined, warpObj)
+    const fillRefNode = getTextByPathList(node, ['p:style', 'a:fillRef'])
+    // fillRef@idx indexes the theme's fillStyleLst, in which 0 is defined as "no fill". The colour
+    // the reference carries is only the one that would have applied had an entry been named, so
+    // reading it regardless paints every unfilled shape in the theme's accent colour. getBorder
+    // already resolves the sibling lnRef through its own idx; this is the same rule for the fill.
+    if (fillRefNode && Number(getTextByPathList(fillRefNode, ['attrs', 'idx'])) === 0) {
+      return { state: 'none' }
+    }
+    fillValue = getSolidFill(fillRefNode, undefined, undefined, warpObj)
     type = 'color'
   }
   if (!fillValue) {
