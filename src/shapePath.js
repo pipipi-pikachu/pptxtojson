@@ -132,11 +132,22 @@ function shapeSnipRoundRect(w, h, adj1, adj2, shapeType, adjType) {
       adjA = adjB = adjC = adjD = 0
   }
 
+  // A rounded or snipped corner is a single distance applied equally to both axes, derived from
+  // the shorter side: OOXML defines it as `ss * adj / 100000` with `ss = min(w, h)`. Scaling it
+  // by w/2 across and h/2 down instead -- which agrees only when the shape is square -- turns a
+  // wide, flat roundRect into a lens, because at maximum adj the two corner curves meet in the
+  // middle of the shape rather than a corner radius in from each end. `adjA`..`adjD` arrive here
+  // already divided by 50000, so half the shorter side is the full-radius case.
+  const rA = adjA * (Math.min(w, h) / 2)
+  const rB = adjB * (Math.min(w, h) / 2)
+  const rC = adjC * (Math.min(w, h) / 2)
+  const rD = adjD * (Math.min(w, h) / 2)
+
   if (shapeType === 'round') {
-    return `M0,${h / 2 + (1 - adjB) * (h / 2)} Q0,${h} ${adjB * (w / 2)},${h} L${w / 2 + (1 - adjC) * (w / 2)},${h} Q${w},${h} ${w},${h / 2 + (h / 2) * (1 - adjC)} L${w},${(h / 2) * adjD} Q${w},0 ${w / 2 + (w / 2) * (1 - adjD)},0 L${(w / 2) * adjA},0 Q0,0 0,${(h / 2) * (adjA)} z`
+    return `M0,${h - rB} Q0,${h} ${rB},${h} L${w - rC},${h} Q${w},${h} ${w},${h - rC} L${w},${rD} Q${w},0 ${w - rD},0 L${rA},0 Q0,0 0,${rA} z`
   } 
   else if (shapeType === 'snip') {
-    return `M0,${adjA * (h / 2)} L0,${h / 2 + (h / 2) * (1 - adjB)} L${adjB * (w / 2)},${h} L${w / 2 + (w / 2) * (1 - adjC)},${h} L${w},${h / 2 + (h / 2) * (1 - adjC)} L${w},${adjD * (h / 2)} L${w / 2 + (w / 2) * (1 - adjD)},0 L${(w / 2) * adjA},0 z`
+    return `M0,${rA} L0,${h - rB} L${rB},${h} L${w - rC},${h} L${w},${h - rC} L${w},${rD} L${w - rD},0 L${rA},0 z`
   }
   return ''
 }
@@ -721,10 +732,14 @@ export function getShapePath(shapType, w, h, node) {
       {
         const shapAdjst = getTextByPathList(node, ['p:spPr', 'a:prstGeom', 'a:avLst', 'a:gd', 'attrs', 'fmla'])
         let adjst_val = 0.2
-        const max_adj_const = 0.7407
         if (shapAdjst) {
-          const adjst = parseInt(shapAdjst.substring(4)) * RATIO_EMUs_Points
-          adjst_val = (adjst * 0.5) / max_adj_const
+          // The adjust value is a fraction of the shorter side in 100000ths, not an EMU length,
+          // so RATIO_EMUs_Points has no business here; putting it through produced a top edge
+          // wider than the shape itself and a self-crossing bow tie. `maxAdj` is where the two
+          // top corners meet, past which the shape would invert.
+          const ss = Math.min(w, h)
+          const a = Math.max(0, Math.min(parseInt(shapAdjst.substring(4)), (50000 * w) / ss))
+          adjst_val = (ss * a) / 100000 / w
         }
 
         let p1x = w * adjst_val,
@@ -759,9 +774,12 @@ export function getShapePath(shapType, w, h, node) {
         const shapAdjst = getTextByPathList(node, ['p:spPr', 'a:prstGeom', 'a:avLst', 'a:gd', 'attrs', 'fmla'])
         let adjst_val = 0.25
         if (shapAdjst) {
-          const max_adj_const = w > h ? w / h : h / w
-          const adjst = parseInt(shapAdjst.substring(4)) / 100000
-          adjst_val = adjst / max_adj_const
+          // Same rule as the trapezoid: the offset is `ss * adj / 200000`, a fraction of the
+          // shorter side. Dividing by the aspect ratio instead leaves the slant too steep on
+          // any shape that is not square.
+          const ss = Math.min(w, h)
+          const a = Math.max(0, Math.min(parseInt(shapAdjst.substring(4)), (100000 * w) / ss))
+          adjst_val = (ss * a) / 200000 / w
         }
         pathData = `M ${adjst_val * w} 0 L 0 ${h} L ${(1 - adjst_val) * w} ${h} L ${w} 0 Z`
       }
