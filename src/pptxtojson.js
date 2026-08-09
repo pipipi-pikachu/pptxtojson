@@ -755,6 +755,9 @@ async function processSpNode(node, warpObj, source, groupHierarchy = []) {
   if (!type) {
     const txBoxVal = getTextByPathList(node, ['p:nvSpPr', 'p:cNvSpPr', 'attrs', 'txBox'])
     if (txBoxVal === '1') type = 'text'
+
+    const hasTextBody = getTextByPathList(node, ['p:txBody']);
+    if (hasTextBody) type = 'text';
   }
   if (!type) type = getTextByPathList(slideLayoutSpNode, ['p:nvSpPr', 'p:nvPr', 'p:ph', 'attrs', 'type'])
   if (!type) type = getTextByPathList(slideMasterSpNode, ['p:nvSpPr', 'p:nvPr', 'p:ph', 'attrs', 'type'])
