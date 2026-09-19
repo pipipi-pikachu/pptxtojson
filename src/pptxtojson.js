@@ -28,6 +28,7 @@ export async function parse(file, options = {}) {
     imageMode: options.imageMode || 'base64',
     videoMode: options.videoMode || 'none',
     audioMode: options.audioMode || 'none',
+    singleLineSpacingFactor: Number.isFinite(options.singleLineSpacingFactor) && options.singleLineSpacingFactor > 0 ? options.singleLineSpacingFactor : 1,
   }
   
   const zip = await JSZip.loadAsync(file)

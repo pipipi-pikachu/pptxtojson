@@ -147,6 +147,8 @@ func()
   - `blob` means audio `blob` is parsed.
   - `none` means audio content is not parsed.
 
+- `singleLineSpacingFactor`: Multiplier applied to percentage-based line spacing (`spcPct`). Default: `1`. Set it to a value such as `1.2` to better approximate PowerPoint's font-dependent single-line spacing in HTML rendering. Absolute point spacing (`spcPts`) is unaffected.
+
 # 🎯 Notes
 
 The current parsing result can achieve roughly 80%+ overall fidelity in layout and styling compared with the source file. For PPTX files manually created and edited from scratch by ordinary users, common page structures and basic styles can even reach 95%+ fidelity.

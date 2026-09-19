@@ -177,11 +177,15 @@ function getParagraphStyleNodes(pNode, textBodyNode, slideLayoutSpNode, slideMas
   return styleNodes
 }
 
-function getLineSpacingValue(spacingNode) {
+function getLineSpacingValue(spacingNode, singleLineSpacingFactor = 1) {
   const spcPct = getTextByPathList(spacingNode, ['a:spcPct', 'attrs', 'val'])
   const spcPts = getTextByPathList(spacingNode, ['a:spcPts', 'attrs', 'val'])
 
-  if (spcPct) return parseInt(spcPct) / 1000 / 100
+  if (spcPct !== undefined) {
+    const value = String(spcPct).trim()
+    const percentage = value.endsWith('%') ? Number.parseFloat(value) / 100 : Number.parseInt(value, 10) / 100000
+    if (Number.isFinite(percentage)) return percentage * singleLineSpacingFactor
+  }
   if (spcPts) return parseInt(spcPts) / 100 + 'pt'
 
   return undefined
@@ -210,10 +214,11 @@ export function getParagraphSpacing(pNode, textBodyNode, slideLayoutSpNode, slid
   if (!styleNodes) return null
 
   const spacing = {}
+  const singleLineSpacingFactor = getTextByPathList(warpObj, ['options', 'singleLineSpacingFactor'])
 
   for (const styleNode of styleNodes) {
     if (spacing.lineSpacing === undefined) {
-      const lineSpacing = getLineSpacingValue(styleNode['a:lnSpc'])
+      const lineSpacing = getLineSpacingValue(styleNode['a:lnSpc'], singleLineSpacingFactor)
       if (lineSpacing !== undefined) spacing.lineSpacing = lineSpacing
     }
 

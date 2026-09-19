@@ -351,6 +351,7 @@ export interface Options {
   imageMode?: 'base64' | 'blob' | 'both' | 'none'
   videoMode?: 'blob' | 'none'
   audioMode?: 'blob' | 'none'
+  singleLineSpacingFactor?: number
 }
 
 export const parse: (file: ArrayBuffer, options?: Options) => Promise<{
