@@ -280,7 +280,7 @@ async function processSingleSlide(zip, sldFileName, themeContent, defaultTextSty
 
   let currentThemeContent = themeContent
   if (themeFilename) {
-    currentThemeContent = currentThemeContent || await readXmlFileCached(zip, themeFilename, xmlCache)
+    currentThemeContent = await readXmlFileCached(zip, themeFilename, xmlCache) || currentThemeContent
     const themeName = themeFilename.split('/').pop()
     const themeResFileName = themeFilename.replace(themeName, '_rels/' + themeName) + '.rels'
     const themeResContent = await readXmlFile(zip, themeResFileName)
