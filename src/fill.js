@@ -15,7 +15,7 @@ import {
   base64ArrayBuffer,
   getTextByPathList,
   angleToDegrees,
-  escapeHtml,
+  unescapeXml,
   getMimeType,
   toHex,
 } from './utils'
@@ -56,7 +56,8 @@ function getMediaCache(warpObj, cacheKey) {
 async function loadMedia(filePath, warpObj, cacheKey, mode = 'base64') {
   if (!filePath || (mode !== 'base64' && mode !== 'blob')) return ''
 
-  const normalizedPath = escapeHtml(filePath)
+  // a rels Target is XML-escaped, a zip entry name is not
+  const normalizedPath = unescapeXml(filePath)
   const cache = getMediaCache(warpObj, cacheKey)
   const cacheItem = cache[normalizedPath] || { base64: '', blob: '' }
   cache[normalizedPath] = cacheItem

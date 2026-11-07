@@ -80,6 +80,11 @@ export function escapeHtml(text) {
   return text.replace(/[&<>"']/g, m => map[m])
 }
 
+export function unescapeXml(text) {
+  const map = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" }
+  return text.replace(/&(amp|lt|gt|quot|apos);/g, (_, name) => map[name])
+}
+
 export function getMimeType(imgFileExt) {
   let mimeType = ''
   switch (imgFileExt.toLowerCase()) {
