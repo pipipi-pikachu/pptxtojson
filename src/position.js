@@ -1,12 +1,9 @@
 import { RATIO_EMUs_Points } from './constants'
-import { numberToFixed } from './utils'
+import { getTextByPathList, numberToFixed } from './utils'
 
 export function getPosition(slideSpNode, slideLayoutSpNode, slideMasterSpNode) {
-  let off
-
-  if (slideSpNode) off = slideSpNode['a:off']['attrs']
-  else if (slideLayoutSpNode) off = slideLayoutSpNode['a:off']['attrs']
-  else if (slideMasterSpNode) off = slideMasterSpNode['a:off']['attrs']
+  const transform = slideSpNode || slideLayoutSpNode || slideMasterSpNode
+  const off = getTextByPathList(transform, ['a:off', 'attrs'])
 
   if (!off) return { top: 0, left: 0 }
 
@@ -17,11 +14,8 @@ export function getPosition(slideSpNode, slideLayoutSpNode, slideMasterSpNode) {
 }
 
 export function getSize(slideSpNode, slideLayoutSpNode, slideMasterSpNode) {
-  let ext
-
-  if (slideSpNode) ext = slideSpNode['a:ext']['attrs']
-  else if (slideLayoutSpNode) ext = slideLayoutSpNode['a:ext']['attrs']
-  else if (slideMasterSpNode) ext = slideMasterSpNode['a:ext']['attrs']
+  const transform = slideSpNode || slideLayoutSpNode || slideMasterSpNode
+  const ext = getTextByPathList(transform, ['a:ext', 'attrs'])
 
   if (!ext) return { width: 0, height: 0 }
 

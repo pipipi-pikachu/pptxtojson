@@ -1,4 +1,4 @@
-import { getTextByPathList } from './utils'
+import { decodeXmlEntities, getTextByPathList } from './utils'
 import { getShadow } from './shadow'
 import { getFillType, getGradientFill, getSolidFill } from './fill'
 
@@ -92,6 +92,32 @@ function getFontTypeface(styleNodes) {
   }
 
   return ''
+}
+
+function getScriptTypeface(styleNodes, script) {
+  for (const style of styleNodes) {
+    const value = getTextByPathList(style, [script, 'attrs', 'typeface'])
+    if (value) return decodeXmlEntities(value)
+  }
+  return ''
+}
+
+function resolveScriptTypeface(typeface, script, type, warpObj) {
+  if (typeface && !typeface.startsWith('+')) return typeface
+  const fontScheme = getTextByPathList(warpObj['themeContent'], ['a:theme', 'a:themeElements', 'a:fontScheme'])
+  const heading = type === 'title' || type === 'subTitle' || type === 'ctrTitle'
+  const family = typeface ? (typeface.startsWith('+mj-') ? 'a:majorFont' : 'a:minorFont') : heading ? 'a:majorFont' : 'a:minorFont'
+  const resolvedScript = typeface && typeface.endsWith('-ea') ? 'a:ea' : typeface && typeface.endsWith('-lt') ? 'a:latin' : script
+  const resolved = getTextByPathList(fontScheme, [family, resolvedScript, 'attrs', 'typeface'])
+  return resolved ? decodeXmlEntities(resolved) : ''
+}
+
+export function getFontFamilies(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl, warpObj) {
+  const styles = getFontStyleNodes(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl)
+  const latin = resolveScriptTypeface(getScriptTypeface(styles, 'a:latin'), 'a:latin', type, warpObj)
+  const eastAsian = resolveScriptTypeface(getScriptTypeface(styles, 'a:ea'), 'a:ea', type, warpObj)
+  const fallback = getFontType(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl, warpObj)
+  return { latin: latin || fallback, eastAsian: eastAsian || latin || fallback }
 }
 
 function getColorFromNode(node, warpObj) {

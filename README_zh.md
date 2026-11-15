@@ -166,6 +166,8 @@ func()
 	- 视频元素可能返回 `blob` 或 `src`；
 	- 音频元素仅返回 `blob`；
 	- 公式图片仅返回 `picBase64`；
+- 在2.2.0及以下版本：
+	- 散点图和气泡图的 `data` 为二维数组；
 
 # 📕 解析属性
 
@@ -191,6 +193,7 @@ func()
 		- 类型 `type`
 		- 持续时间 `duration`
 		- 方向 `direction`
+		- 自动换页等待时间（毫秒，可选） `autoNextAfter`
 
 	- 页面内元素 `elements` / 母版元素 `layoutElements`
 		- OOXML ID `id`
@@ -215,6 +218,7 @@ func()
 			- 垂直对齐方向 `vAlign`
 			- 是否自动换行 `wrap`
 			- 是否为竖向文本 `isVertical`
+			- 文字方向 `textDirection`
 			- 元素名 `name`
 			- 自动调整大小 `autoFit`
 				- 类型 `type`
@@ -257,6 +261,7 @@ func()
 			- 填充（颜色、图片、渐变、图案） `fill`
 			- 仅描边（无填充） `strokeOnly`
 			- 内容文字（HTML富文本，与文字元素一致） `content`
+			- 文字方向（与文字元素一致，独立于 `rotate`） `textDirection`
 			- 垂直翻转 `isFlipV`
 			- 水平翻转 `isFlipH`
 			- 旋转角度 `rotate`
@@ -293,6 +298,7 @@ func()
 			- 图表数据 `data`
 			- 图表主题色 `colors`
 			- 图表类型 `chartType`
+			- 组合图分组（`chartType='comboChart'` 时返回，代替顶层 `data`） `groups`
 			- 柱状图方向 `barDir`
 			- 是否带数据标记 `marker`
 			- 环形图尺寸 `holeSize`
@@ -326,8 +332,8 @@ func()
 			- 公式图片引用路径 `picRef`
 			- 公式图片base64 `picBase64`
 			- 公式图片blob `picBlob`
-			- LaTeX表达式（仅支持常见结构） `latex`
-			- 文本（文本和公式混排时存在） `text`
+			- LaTeX表达式（字符串，支持常见结构；同框多公式合并返回） `latex`
+			- 文本（未合入 LaTeX 的混排文字 HTML） `text`
 
 		- Smart图
 			- 类型 `type='diagram'`

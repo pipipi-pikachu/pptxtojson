@@ -13,14 +13,26 @@ function getLineEnd(node) {
   return lineEnd
 }
 
+export function getShapeBorder(node, elType, warpObj, { slideLayoutSpNode, slideMasterSpNode } = {}) {
+  // Inherit only a missing whole outline. A local line (including noFill), or
+  // a local theme-line reference, must not be overwritten by an ancestor.
+  for (const candidate of [node, slideLayoutSpNode, slideMasterSpNode]) {
+    if (getTextByPathList(candidate, ['p:spPr', 'a:ln']) || getTextByPathList(candidate, ['p:style', 'a:lnRef'])) {
+      return getBorder(candidate, elType, warpObj)
+    }
+  }
+  return getBorder(node, elType, warpObj)
+}
+
 export function getBorder(node, elType, warpObj) {
   let lineNode = getTextByPathList(node, ['p:spPr', 'a:ln'])
-  if (!lineNode) {
-    const lnRefNode = getTextByPathList(node, ['p:style', 'a:lnRef'])
-    if (lnRefNode) {
-      const lnIdx = getTextByPathList(lnRefNode, ['attrs', 'idx'])
-      lineNode = warpObj['themeContent']['a:theme']['a:themeElements']['a:fmtScheme']['a:lnStyleLst']['a:ln'][Number(lnIdx) - 1]
-    }
+  const lnRefNode = getTextByPathList(node, ['p:style', 'a:lnRef'])
+  const phClr = getSolidFill(lnRefNode, undefined, undefined, warpObj)
+  if (!lineNode && lnRefNode) {
+    const lnIdx = Number(getTextByPathList(lnRefNode, ['attrs', 'idx']))
+    const lines = getTextByPathList(warpObj['themeContent'], ['a:theme', 'a:themeElements', 'a:fmtScheme', 'a:lnStyleLst', 'a:ln'])
+    if (lnIdx === 0) lineNode = { 'a:noFill': {} }
+    else if (lines) lineNode = Array.isArray(lines) ? lines[lnIdx - 1] : lnIdx === 1 ? lines : undefined
   }
   if (!lineNode) lineNode = node
 
@@ -34,7 +46,7 @@ export function getBorder(node, elType, warpObj) {
   }
 
   const solidFill = getTextByPathList(lineNode, ['a:solidFill'])
-  let borderColor = getSolidFill(solidFill, undefined, undefined, warpObj)
+  let borderColor = getSolidFill(solidFill, undefined, phClr, warpObj)
 
   if (!borderColor) {
     const schemeClrNode = getTextByPathList(node, ['p:style', 'a:lnRef', 'a:schemeClr'])

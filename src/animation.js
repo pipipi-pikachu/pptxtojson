@@ -55,8 +55,9 @@ export function parseTransition(transitionNode) {
     }
   }
 
-  if (attrs.advClick === '0' && attrs.advTm) {
-    transition.autoNextAfter = parseInt(attrs.advTm, 10)
+  if (attrs.advTm !== undefined) {
+    const advanceTime = parseInt(attrs.advTm, 10)
+    if (Number.isFinite(advanceTime) && advanceTime >= 0) transition.autoNextAfter = advanceTime
   }
 
   const effectRegex = /^(p|p\d{2}):/ 

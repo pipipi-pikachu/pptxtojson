@@ -32,11 +32,12 @@ export function shapeArc(cX, cY, rX, rY, stAng, endAng, isClose) {
 }
 
 export function getCustomShapePath(custShapType, w, h) {
-  const pathLstNode = getTextByPathList(custShapType, ['a:pathLst'])
-  let pathNodes = getTextByPathList(pathLstNode, ['a:path'])
+  const pathNodes = normalizeToArray(getTextByPathList(custShapType, ['a:pathLst', 'a:path']))
 
-  if (Array.isArray(pathNodes)) pathNodes = pathNodes.shift()
+  return pathNodes.map(pathNode => getCustomShapePathData(pathNode, w, h)).join('')
+}
 
+function getCustomShapePathData(pathNodes, w, h) {
   const maxX = parseInt(pathNodes['attrs']['w'])
   const maxY = parseInt(pathNodes['attrs']['h'])
   const cX = maxX === 0 ? 0 : (1 / maxX) * w
@@ -50,7 +51,7 @@ export function getCustomShapePath(custShapType, w, h) {
   let quadBezToNodes = pathNodes['a:quadBezTo']
   const arcToNodes = pathNodes['a:arcTo']
   let closeNode = getTextByPathList(pathNodes, ['a:close'])
-  if (!Array.isArray(moveToNode)) moveToNode = [moveToNode]
+  moveToNode = normalizeToArray(moveToNode)
 
   const multiSapeAry = []
   if (moveToNode.length > 0) {
@@ -169,10 +170,10 @@ export function getCustomShapePath(custShapType, w, h) {
     }
     if (closeNode) {
       if (!Array.isArray(closeNode)) closeNode = [closeNode]
-      Object.keys(closeNode).forEach(() => {
+      closeNode.forEach(close => {
         multiSapeAry.push({
           type: 'close',
-          order: Infinity,
+          order: getTextByPathList(close, ['attrs', 'order']),
         })
       })
     }

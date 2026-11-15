@@ -74,6 +74,9 @@ export interface LineEnd {
   length?: 'sm' | 'med' | 'lg'
 }
 
+/** OOXML bodyPr vert; omitted means horizontal. It is independent of element rotation. */
+export type TextDirection = 'horz' | 'vert' | 'vert270' | 'eaVert' | 'wordArtVert' | 'wordArtVertRtl' | 'mongolianVert'
+
 export interface Shape {
   type: 'shape'
   id: string
@@ -91,6 +94,7 @@ export interface Shape {
   isFlipV: boolean
   isFlipH: boolean
   rotate: number
+  textDirection?: TextDirection
   shapType: string
   vAlign: string
   wrap: boolean
@@ -124,6 +128,7 @@ export interface Text {
   isFlipH: boolean
   isVertical: boolean
   rotate: number
+  textDirection?: TextDirection
   content: string
   vAlign: string
   wrap: boolean
@@ -219,7 +224,8 @@ export type ChartType = 'lineChart' |
   'radarChart' |
   'surfaceChart' |
   'surface3DChart' |
-  'stockChart'
+  'stockChart' |
+  'comboChart'
 
 export interface ChartValue {
   x: string
@@ -233,37 +239,70 @@ export interface ChartItem {
   values: ChartValue[]
   xlabels: ChartXLabel
 }
-export type ScatterChartData = number[][]
-export interface CommonChart {
-  type: 'chart'
-  id: string
-  left: number
-  top: number
-  width: number
-  height: number
+export interface ScatterPoint {
+  x: number
+  y: number
+}
+export interface BubblePoint extends ScatterPoint {
+  size: number
+}
+export interface ScatterSeries {
+  key: string
+  values: ScatterPoint[]
+}
+export interface BubbleSeries {
+  key: string
+  values: BubblePoint[]
+}
+export type ScatterChartData = ScatterSeries[]
+export type BubbleChartData = BubbleSeries[]
+
+export interface CommonChartProperties {
   data: ChartItem[]
   colors: string[]
-  chartType: Exclude<ChartType, 'scatterChart' | 'bubbleChart'>
+  chartType: Exclude<ChartType, 'scatterChart' | 'bubbleChart' | 'comboChart'>
   barDir?: 'bar' | 'col'
   marker?: boolean
   holeSize?: string
   grouping?: string
   style?: string
-  order: number
 }
-export interface ScatterChart {
+export interface ScatterChartProperties {
+  data: ScatterChartData
+  colors: string[]
+  chartType: 'scatterChart'
+  style?: string
+}
+export interface BubbleChartProperties {
+  data: BubbleChartData
+  colors: string[]
+  chartType: 'bubbleChart'
+  bubbleScale?: number
+  showNegBubbles?: boolean
+  sizeRepresents?: 'area' | 'w'
+}
+export type ChartGroup = (CommonChartProperties | ScatterChartProperties | BubbleChartProperties) & {
+  axisIds: string[]
+  seriesIndices: number[]
+}
+export interface ChartElementBase {
   type: 'chart'
   id: string
   left: number
   top: number
   width: number
   height: number
-  data: ScatterChartData
-  colors: string[]
-  chartType: 'scatterChart' | 'bubbleChart'
   order: number
 }
-export type Chart = CommonChart | ScatterChart
+export interface CommonChart extends ChartElementBase, CommonChartProperties {}
+export interface ScatterChart extends ChartElementBase, ScatterChartProperties {}
+export interface BubbleChart extends ChartElementBase, BubbleChartProperties {}
+export interface CombinationChart extends ChartElementBase {
+  chartType: 'comboChart'
+  groups: ChartGroup[]
+  colors: string[]
+}
+export type Chart = CommonChart | ScatterChart | BubbleChart | CombinationChart
 
 export interface Video {
   type: 'video'
@@ -337,6 +376,7 @@ export interface SlideTransition {
   type: string
   duration: number
   direction: string | null
+  autoNextAfter?: number
 }
 
 export interface Slide {

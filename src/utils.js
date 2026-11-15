@@ -64,6 +64,13 @@ export function getTextByPathList(node, path) {
   return node
 }
 
+export function getResourcesForSource(warpObj, source = 'slide') {
+  if (source === 'slideMasterBg') return warpObj['masterResObj'] || {}
+  if (source === 'slideLayoutBg') return warpObj['layoutResObj'] || {}
+  if (source === 'diagramBg') return warpObj['diagramResObj'] || {}
+  return warpObj['slideResObj'] || {}
+}
+
 export function angleToDegrees(angle) {
   if (!angle) return 0
   return Math.round(angle / 60000)
@@ -78,6 +85,16 @@ export function escapeHtml(text) {
     "'": '&#039;',
   }
   return text.replace(/[&<>"']/g, m => map[m])
+}
+
+export function decodeXmlEntities(text) {
+  const named = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", nbsp: ' ' }
+  return String(text).replace(/&(#x[0-9a-f]+|#[0-9]+|amp|lt|gt|quot|apos|nbsp);/gi, (match, entity) => {
+    if (!entity.startsWith('#')) return named[entity.toLowerCase()]
+    const hex = entity[1].toLowerCase() === 'x'
+    const code = Number.parseInt(entity.slice(hex ? 2 : 1), hex ? 16 : 10)
+    return code >= 0 && code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff) ? String.fromCodePoint(code) : match
+  })
 }
 
 export function getMimeType(imgFileExt) {

@@ -35,39 +35,31 @@ function shapePie(H, w, adj1, adj2, isClose) {
 
   return d
 }
-function shapeGear(h, points) {
-  const innerRadius = h
-  const outerRadius = 1.5 * innerRadius
-  const cx = outerRadius
-  const cy = outerRadius
-  const notches = points
-  const radiusO = outerRadius
-  const radiusI = innerRadius
-  const taperO = 50
-  const taperI = 35
-  const pi2 = 2 * Math.PI
-  const angle = pi2 / (notches * 2)
-  const taperAI = angle * taperI * 0.005
-  const taperAO = angle * taperO * 0.005
-
-  let a = angle
-  let toggle = false
-
-  let d = ' M' + (cx + radiusO * Math.cos(taperAO)) + ' ' + (cy + radiusO * Math.sin(taperAO))
-
-  for (; a <= pi2 + angle; a += angle) {
-    if (toggle) {
-      d += ' L' + (cx + radiusI * Math.cos(a - taperAI)) + ',' + (cy + radiusI * Math.sin(a - taperAI))
-      d += ' L' + (cx + radiusO * Math.cos(a + taperAO)) + ',' + (cy + radiusO * Math.sin(a + taperAO))
-    } 
-    else {
-      d += ' L' + (cx + radiusO * Math.cos(a - taperAO)) + ',' + (cy + radiusO * Math.sin(a - taperAO))
-      d += ' L' + (cx + radiusI * Math.cos(a + taperAI)) + ',' + (cy + radiusI * Math.sin(a + taperAI))
+function shapeGear(w, h, teeth) {
+  const pitch = 2 * Math.PI / teeth
+  const vertices = []
+  for (let i = 0; i < teeth; i++) {
+    const centerAngle = i * pitch - Math.PI / 2
+    for (const [offset, radius] of [[-0.4125, 2 / 3], [-0.125, 1], [0.125, 1], [0.4125, 2 / 3]]) {
+      const angle = centerAngle + offset * pitch
+      vertices.push({ x: Math.cos(angle) * radius, y: Math.sin(angle) * radius })
     }
-    toggle = !toggle
   }
-  d += ' '
-  return d
+
+  const minX = Math.min(...vertices.map(point => point.x))
+  const maxX = Math.max(...vertices.map(point => point.x))
+  const minY = Math.min(...vertices.map(point => point.y))
+  const maxY = Math.max(...vertices.map(point => point.y))
+  const coordinates = vertices.map(point => ({
+    x: (point.x - minX) / (maxX - minX) * w,
+    y: (point.y - minY) / (maxY - minY) * h,
+  }))
+  let path = `M${coordinates[0].x},${coordinates[0].y}`
+  for (let i = 1; i <= coordinates.length; i++) {
+    const point = coordinates[i % coordinates.length]
+    path += ` L${point.x},${point.y}`
+  }
+  return path + ' Z'
 }
 
 function shapeArc(cX, cY, rX, rY, stAng, endAng, isClose) {
@@ -688,7 +680,7 @@ export function getShapePath(shapType, w, h, node) {
         const shapAdjst = getTextByPathList(node, ['p:spPr', 'a:prstGeom', 'a:avLst', 'a:gd', 'attrs', 'fmla'])
         let shapAdjst_val = 0.5
         if (shapAdjst) {
-          shapAdjst_val = parseInt(shapAdjst.substring(4)) * RATIO_EMUs_Points
+          shapAdjst_val = parseInt(shapAdjst.substring(4)) / 100000
         }
 
         let p1x = w * shapAdjst_val
@@ -1876,7 +1868,7 @@ export function getShapePath(shapType, w, h, node) {
       break
     case 'gear6':
     case 'gear9':
-      pathData = shapeGear(w, h / 3.5, parseInt(shapType.substring(4)))
+      pathData = shapeGear(w, h, parseInt(shapType.substring(4)))
       break
     case 'bentConnector3':
       {

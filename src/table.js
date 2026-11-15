@@ -60,15 +60,18 @@ export async function getTableCellParams(tcNode, thisTblStyle, cellSource, warpO
   let fontBold
 
   const getCelFill = getTextByPathList(tcNode, ['a:tcPr'])
-  if (getCelFill) {
+  if (getCelFill && getCelFill['a:noFill']) {
+    fillColor = null
+  }
+  else if (getCelFill) {
     const cellObj = { 'p:spPr': getCelFill }
     const fill = await getShapeFill(cellObj, warpObj, 'slide')
 
     if (fill && fill.type === 'color' && fill.value) {
-      fillColor = fill.value 
+      fillColor = fill.value
     }
   }
-  if (!fillColor) {
+  if (fillColor === undefined) {
     let bgFillschemeClr
     if (cellSource) bgFillschemeClr = getTextByPathList(thisTblStyle, [cellSource, 'a:tcStyle', 'a:fill', 'a:solidFill'])
     if (bgFillschemeClr) {
@@ -85,22 +88,22 @@ export async function getTableCellParams(tcNode, thisTblStyle, cellSource, warpO
 
   let lin_bottm = getTextByPathList(tcNode, ['a:tcPr', 'a:lnB'])
   if (!lin_bottm) {
-    if (cellSource) lin_bottm = getTextByPathList(thisTblStyle[cellSource], ['a:tcStyle', 'a:tcBdr', 'a:bottom', 'a:ln'])
+    if (cellSource) lin_bottm = getTextByPathList(thisTblStyle, [cellSource, 'a:tcStyle', 'a:tcBdr', 'a:bottom', 'a:ln'])
     if (!lin_bottm) lin_bottm = getTextByPathList(thisTblStyle, ['a:wholeTbl', 'a:tcStyle', 'a:tcBdr', 'a:bottom', 'a:ln'])
   }
   let lin_top = getTextByPathList(tcNode, ['a:tcPr', 'a:lnT'])
   if (!lin_top) {
-    if (cellSource) lin_top = getTextByPathList(thisTblStyle[cellSource], ['a:tcStyle', 'a:tcBdr', 'a:top', 'a:ln'])
+    if (cellSource) lin_top = getTextByPathList(thisTblStyle, [cellSource, 'a:tcStyle', 'a:tcBdr', 'a:top', 'a:ln'])
     if (!lin_top) lin_top = getTextByPathList(thisTblStyle, ['a:wholeTbl', 'a:tcStyle', 'a:tcBdr', 'a:top', 'a:ln'])
   }
   let lin_left = getTextByPathList(tcNode, ['a:tcPr', 'a:lnL'])
   if (!lin_left) {
-    if (cellSource) lin_left = getTextByPathList(thisTblStyle[cellSource], ['a:tcStyle', 'a:tcBdr', 'a:left', 'a:ln'])
+    if (cellSource) lin_left = getTextByPathList(thisTblStyle, [cellSource, 'a:tcStyle', 'a:tcBdr', 'a:left', 'a:ln'])
     if (!lin_left) lin_left = getTextByPathList(thisTblStyle, ['a:wholeTbl', 'a:tcStyle', 'a:tcBdr', 'a:left', 'a:ln'])
   }
   let lin_right = getTextByPathList(tcNode, ['a:tcPr', 'a:lnR'])
   if (!lin_right) {
-    if (cellSource) lin_right = getTextByPathList(thisTblStyle[cellSource], ['a:tcStyle', 'a:tcBdr', 'a:right', 'a:ln'])
+    if (cellSource) lin_right = getTextByPathList(thisTblStyle, [cellSource, 'a:tcStyle', 'a:tcBdr', 'a:right', 'a:ln'])
     if (!lin_right) lin_right = getTextByPathList(thisTblStyle, ['a:wholeTbl', 'a:tcStyle', 'a:tcBdr', 'a:right', 'a:ln'])
   }
 

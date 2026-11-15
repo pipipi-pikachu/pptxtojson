@@ -1,5 +1,6 @@
 import { RATIO_EMUs_Points } from './constants'
-import { getTextByPathList, numberToFixed } from './utils'
+import { decodeXmlEntities, getTextByPathList, numberToFixed } from './utils'
+import { getFontSize } from './fontStyle'
 
 function getParagraphLevel(node) {
   let lvlIdx = 1
@@ -78,6 +79,14 @@ export function getVerticalAlign(node, slideLayoutSpNode, slideMasterSpNode) {
     }
   }
   return (anchor === 'ctr') ? 'mid' : ((anchor === 'b') ? 'down' : 'up')
+}
+
+export function getTextDirection(node, slideLayoutSpNode, slideMasterSpNode) {
+  for (const shape of [node, slideLayoutSpNode, slideMasterSpNode]) {
+    const direction = getTextByPathList(shape, ['p:txBody', 'a:bodyPr', 'attrs', 'vert'])
+    if (direction !== undefined && direction !== null && direction !== '') return direction
+  }
+  return 'horz'
 }
 
 export function getTextAutoFit(node, slideLayoutSpNode, slideMasterSpNode) {
@@ -160,7 +169,7 @@ function appendDefaultTextParagraphStyleNodes(styleNodes, defaultTextStyle, lvl)
   pushParagraphStyleNode(styleNodes, getTextByPathList(defaultTextStyle, ['a:defPPr']))
 }
 
-function getParagraphStyleNodes(pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, warpObj) {
+export function getParagraphStyleNodes(pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, warpObj) {
   if (!pNode) return null
 
   const pPrNode = pNode['a:pPr']
@@ -177,6 +186,30 @@ function getParagraphStyleNodes(pNode, textBodyNode, slideLayoutSpNode, slideMas
   return styleNodes
 }
 
+export function getParagraphListInfo(pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, warpObj) {
+  const styleNodes = getParagraphStyleNodes(pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, warpObj) || []
+  for (const style of styleNodes) {
+    if (style['a:buNone'] || style['a:buBlip']) return { type: '' }
+    if (style['a:buChar']) {
+      const marker = decodeXmlEntities(getTextByPathList(style, ['a:buChar', 'attrs', 'char']) || '•')
+      return { type: 'ul', marker, signature: 'ul:' + marker }
+    }
+    if (style['a:buAutoNum']) {
+      const format = getTextByPathList(style, ['a:buAutoNum', 'attrs', 'type']) || 'arabicPeriod'
+      const rawStart = getTextByPathList(style, ['a:buAutoNum', 'attrs', 'startAt'])
+      const parsed = Number.parseInt(rawStart, 10)
+      return {
+        type: 'ol',
+        format,
+        start: Number.isFinite(parsed) && parsed > 0 ? parsed : 1,
+        explicitStart: style === pNode['a:pPr'] && rawStart !== undefined,
+        signature: 'ol:' + format,
+      }
+    }
+  }
+  return { type: '' }
+}
+
 function getLineSpacingValue(spacingNode, singleLineSpacingFactor = 1) {
   const spcPct = getTextByPathList(spacingNode, ['a:spcPct', 'attrs', 'val'])
   const spcPts = getTextByPathList(spacingNode, ['a:spcPts', 'attrs', 'val'])
@@ -191,14 +224,34 @@ function getLineSpacingValue(spacingNode, singleLineSpacingFactor = 1) {
   return undefined
 }
 
-function getParagraphSpacingValue(spacingNode) {
+function getParagraphSpacingValue(spacingNode, referenceLineHeight) {
   const spcPct = getTextByPathList(spacingNode, ['a:spcPct', 'attrs', 'val'])
   const spcPts = getTextByPathList(spacingNode, ['a:spcPts', 'attrs', 'val'])
 
-  if (spcPct) return parseInt(spcPct) / 1000 + 'em'
-  if (spcPts) return parseInt(spcPts) / 100 + 'pt'
+  if (spcPct !== undefined && spcPct !== null && spcPct !== '') {
+    const value = String(spcPct).trim()
+    const ratio = value.endsWith('%') ? Number.parseFloat(value) / 100 : Number.parseInt(value, 10) / 100000
+    if (Number.isFinite(ratio)) return numberToFixed(ratio * referenceLineHeight) + 'pt'
+  }
+  if (spcPts !== undefined && spcPts !== null && spcPts !== '') return parseInt(spcPts) / 100 + 'pt'
 
   return undefined
+}
+
+function getParagraphReferenceLineHeight(pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, warpObj, factor) {
+  const lvl = getParagraphLevel(pNode)
+  const runs = []
+  for (const key of ['a:r', 'a:fld']) {
+    const nodes = pNode[key]
+    if (nodes) runs.push(...(Array.isArray(nodes) ? nodes : [nodes]))
+  }
+  if (!runs.length) runs.push(pNode)
+
+  const fontSizes = runs.map(run => parseFloat(getFontSize(run, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl, getTextByPathList(warpObj, ['defaultTextStyle']))))
+  const size = Math.max(...fontSizes.filter(value => Number.isFinite(value) && value > 0))
+  // The host paragraph's CSS em is not the text run's size. Resolve an explicit
+  // point length; factor remains a configurable approximation of font metrics.
+  return (Number.isFinite(size) ? size : 18) * factor
 }
 
 function getParagraphIndentValue(styleNode, attrName) {
@@ -214,7 +267,15 @@ export function getParagraphSpacing(pNode, textBodyNode, slideLayoutSpNode, slid
   if (!styleNodes) return null
 
   const spacing = {}
-  const singleLineSpacingFactor = getTextByPathList(warpObj, ['options', 'singleLineSpacingFactor'])
+  const configuredFactor = getTextByPathList(warpObj, ['options', 'singleLineSpacingFactor'])
+  const singleLineSpacingFactor = Number.isFinite(configuredFactor) && configuredFactor > 0 ? configuredFactor : 1
+  let referenceLineHeight
+  const paragraphSpacingValue = node => {
+    if (getTextByPathList(node, ['a:spcPct', 'attrs', 'val']) !== undefined && referenceLineHeight === undefined) {
+      referenceLineHeight = getParagraphReferenceLineHeight(pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, warpObj, singleLineSpacingFactor)
+    }
+    return getParagraphSpacingValue(node, referenceLineHeight)
+  }
 
   for (const styleNode of styleNodes) {
     if (spacing.lineSpacing === undefined) {
@@ -223,12 +284,12 @@ export function getParagraphSpacing(pNode, textBodyNode, slideLayoutSpNode, slid
     }
 
     if (spacing.spaceBefore === undefined) {
-      const spaceBefore = getParagraphSpacingValue(styleNode['a:spcBef'])
+      const spaceBefore = paragraphSpacingValue(styleNode['a:spcBef'])
       if (spaceBefore !== undefined) spacing.spaceBefore = spaceBefore
     }
 
     if (spacing.spaceAfter === undefined) {
-      const spaceAfter = getParagraphSpacingValue(styleNode['a:spcAft'])
+      const spaceAfter = paragraphSpacingValue(styleNode['a:spcAft'])
       if (spaceAfter !== undefined) spacing.spaceAfter = spaceAfter
     }
   }

@@ -15,7 +15,7 @@ import {
   base64ArrayBuffer,
   getTextByPathList,
   angleToDegrees,
-  escapeHtml,
+  decodeXmlEntities,
   getMimeType,
   toHex,
 } from './utils'
@@ -56,7 +56,7 @@ function getMediaCache(warpObj, cacheKey) {
 async function loadMedia(filePath, warpObj, cacheKey, mode = 'base64') {
   if (!filePath || (mode !== 'base64' && mode !== 'blob')) return ''
 
-  const normalizedPath = escapeHtml(filePath)
+  const normalizedPath = decodeXmlEntities(filePath)
   const cache = getMediaCache(warpObj, cacheKey)
   const cacheItem = cache[normalizedPath] || { base64: '', blob: '' }
   cache[normalizedPath] = cacheItem
@@ -278,11 +278,12 @@ export async function getBgPicFill(bgPr, sorce, warpObj) {
   }
 }
 
-export function getGradientFill(node, warpObj) {
-  const gsLst = node['a:gsLst']['a:gs']
+export function getGradientFill(node, warpObj, phClr) {
+  const gsNodes = node['a:gsLst']['a:gs']
+  const gsLst = Array.isArray(gsNodes) ? gsNodes : [gsNodes]
   const colors = []
   for (let i = 0; i < gsLst.length; i++) {
-    const lo_color = getSolidFill(gsLst[i], undefined, undefined, warpObj)
+    const lo_color = getSolidFill(gsLst[i], undefined, phClr, warpObj)
     const pos = getTextByPathList(gsLst[i], ['attrs', 'pos'])
 
     colors[i] = {
@@ -469,7 +470,7 @@ export async function getSlideBackgroundFill(warpObj) {
       const bgFillTyp = getFillType(bgFillLstIdx)
       if (bgFillTyp === 'SOLID_FILL') {
         const sldFill = bgFillLstIdx['a:solidFill']
-        const sldBgClr = getSolidFill(sldFill, clrMapOvr, undefined, warpObj)
+        const sldBgClr = getSolidFill(sldFill, clrMapOvr, phClr, warpObj)
         background = sldBgClr
       } 
       else if (bgFillTyp === 'GRADIENT_FILL') {
@@ -565,7 +566,7 @@ export async function getSlideBackgroundFill(warpObj) {
         const bgFillTyp = getFillType(bgFillLstIdx)
         if (bgFillTyp === 'SOLID_FILL') {
           const sldFill = bgFillLstIdx['a:solidFill']
-          const sldBgClr = getSolidFill(sldFill, clrMapOvr, undefined, warpObj)
+          const sldBgClr = getSolidFill(sldFill, clrMapOvr, phClr, warpObj)
           background = sldBgClr
         }
         else if (bgFillTyp === 'GRADIENT_FILL') {
@@ -668,7 +669,7 @@ export async function getSlideBackgroundFill(warpObj) {
           const bgFillTyp = getFillType(bgFillLstIdx)
           if (bgFillTyp === 'SOLID_FILL') {
             const sldFill = bgFillLstIdx['a:solidFill']
-            const sldBgClr = getSolidFill(sldFill, clrMapOvr, undefined, warpObj)
+            const sldBgClr = getSolidFill(sldFill, clrMap, phClr, warpObj)
             background = sldBgClr
           }
           else if (bgFillTyp === 'GRADIENT_FILL') {
@@ -721,6 +722,38 @@ function getShapeFillCandidates(node, source, slideLayoutSpNode, slideMasterSpNo
   return candidates
 }
 
+function resolveThemeShapeFill(reference, warpObj) {
+  if (!reference) return { state: 'missing' }
+  const index = Number(getTextByPathList(reference, ['attrs', 'idx']))
+  if (index === 0) return { state: 'none' }
+  if (!Number.isInteger(index) || index < 1 || index >= 1000) return { state: 'missing' }
+
+  const styles = getTextByPathList(warpObj['themeContent'], ['a:theme', 'a:themeElements', 'a:fmtScheme', 'a:fillStyleLst'])
+  const entries = []
+  for (const [key, value] of Object.entries(styles || {})) {
+    if (key === 'attrs') continue
+    for (const entry of Array.isArray(value) ? value : [value]) entries.push({ key, entry })
+  }
+  entries.sort((a, b) => {
+    const aOrder = getTextByPathList(a.entry, ['attrs', 'order']) || 0
+    const bOrder = getTextByPathList(b.entry, ['attrs', 'order']) || 0
+    return aOrder - bOrder
+  })
+  const selected = entries[index - 1]
+  if (!selected) return { state: 'missing' }
+  if (selected.key === 'a:noFill') return { state: 'none' }
+
+  const phClr = getSolidFill(reference, undefined, undefined, warpObj)
+  if (selected.key === 'a:solidFill') {
+    const value = getSolidFill(selected.entry, undefined, phClr, warpObj)
+    if (value) return { state: 'found', fill: { type: 'color', value } }
+  }
+  else if (selected.key === 'a:gradFill') {
+    return { state: 'found', fill: { type: 'gradient', value: getGradientFill(selected.entry, warpObj, phClr) } }
+  }
+  return { state: 'missing' }
+}
+
 async function resolveShapeFillFromNode(node, warpObj, source, groupHierarchy) {
   if (!node) return { state: 'missing' }
 
@@ -762,10 +795,8 @@ async function resolveShapeFillFromNode(node, warpObj, source, groupHierarchy) {
     const groupFill = await findFillInGroupHierarchy(groupHierarchy, warpObj, source)
     return groupFill ? { state: 'found', fill: groupFill } : { state: 'none' }
   }
-  if (!fillValue) {
-    const clrName = getTextByPathList(node, ['p:style', 'a:fillRef'])
-    fillValue = getSolidFill(clrName, undefined, undefined, warpObj)
-    type = 'color'
+  if (!fillType) {
+    return resolveThemeShapeFill(getTextByPathList(node, ['p:style', 'a:fillRef']), warpObj)
   }
   if (!fillValue) {
     return { state: 'missing' }

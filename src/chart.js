@@ -27,6 +27,15 @@ function extractChartColors(serNode, warpObj) {
   return schemeClrs
 }
 
+function getChartDataPoints(sourceNode) {
+  const cache = getTextByPathList(sourceNode, ['c:strRef', 'c:strCache']) ||
+    getTextByPathList(sourceNode, ['c:numRef', 'c:numCache']) ||
+    getTextByPathList(sourceNode, ['c:strLit']) ||
+    getTextByPathList(sourceNode, ['c:numLit'])
+
+  return getTextByPathList(cache, ['c:pt'])
+}
+
 function extractChartData(serNode) {
   const dataMat = []
   if (!serNode) return dataMat
@@ -36,28 +45,18 @@ function extractChartData(serNode) {
     const colName = getTextByPathList(innerNode, ['c:tx', 'c:strRef', 'c:strCache', 'c:pt', 'c:v']) || index
 
     const rowNames = {}
-    if (getTextByPathList(innerNode, ['c:cat', 'c:strRef', 'c:strCache', 'c:pt'])) {
-      eachElement(innerNode['c:cat']['c:strRef']['c:strCache']['c:pt'], innerNode => {
-        rowNames[innerNode['attrs']['idx']] = innerNode['c:v']
-        return ''
-      })
-    } 
-    else if (getTextByPathList(innerNode, ['c:cat', 'c:numRef', 'c:numCache', 'c:pt'])) {
-      eachElement(innerNode['c:cat']['c:numRef']['c:numCache']['c:pt'], innerNode => {
-        rowNames[innerNode['attrs']['idx']] = innerNode['c:v']
-        return ''
-      })
-    }
+    eachElement(getChartDataPoints(innerNode['c:cat']), point => {
+      rowNames[point['attrs']['idx']] = point['c:v']
+      return ''
+    })
 
-    if (getTextByPathList(innerNode, ['c:val', 'c:numRef', 'c:numCache', 'c:pt'])) {
-      eachElement(innerNode['c:val']['c:numRef']['c:numCache']['c:pt'], innerNode => {
-        dataRow.push({
-          x: innerNode['attrs']['idx'],
-          y: parseFloat(innerNode['c:v']),
-        })
-        return ''
+    eachElement(getChartDataPoints(innerNode['c:val']), point => {
+      dataRow.push({
+        x: point['attrs']['idx'],
+        y: parseFloat(point['c:v']),
       })
-    }
+      return ''
+    })
 
     dataMat.push({
       key: colName,
@@ -70,158 +69,204 @@ function extractChartData(serNode) {
   return dataMat
 }
 
-function extractScatterChartData(serNode) {
-  const dataMat = []
-  if (!serNode) return dataMat
-
-  const serNodes = serNode.constructor === Array ? serNode : [serNode]
-  const firstSerNode = serNodes[0]
-  const xData = []
-
-  eachElement(firstSerNode['c:xVal']['c:numRef']['c:numCache']['c:pt'], innerNode => {
-    xData.push(parseFloat(innerNode['c:v']))
+function getNumericChartPoints(sourceNode) {
+  const points = new Map()
+  eachElement(getChartDataPoints(sourceNode), point => {
+    const index = Number.parseInt(getTextByPathList(point, ['attrs', 'idx']), 10)
+    const raw = point['c:v']
+    const value = Number.parseFloat(typeof raw === 'object' && raw ? raw.value : raw)
+    if (Number.isInteger(index) && index >= 0 && Number.isFinite(value)) points.set(index, value)
     return ''
   })
-  dataMat.push(xData)
+  return points
+}
 
-  for (const node of serNodes) {
-    const yData = []
-    eachElement(node['c:yVal']['c:numRef']['c:numCache']['c:pt'], innerNode => {
-      yData.push(parseFloat(innerNode['c:v']))
-      return ''
-    })
-    dataMat.push(yData)
+function getChartSeriesName(node, index) {
+  const direct = getTextByPathList(node, ['c:tx', 'c:v'])
+  if (typeof direct === 'string') return direct
+  if (direct && typeof direct.value === 'string') return direct.value
+
+  const points = getChartDataPoints(node['c:tx'])
+  const first = Array.isArray(points) ? points[0] : points
+  const name = getTextByPathList(first, ['c:v'])
+  if (typeof name === 'string') return name
+  if (name && typeof name.value === 'string') return name.value
+  return String(index)
+}
+
+function extractScatterChartData(serNode, isBubble = false) {
+  const series = []
+  eachElement(serNode, (node, index) => {
+    const xPoints = getNumericChartPoints(node['c:xVal'])
+    const yPoints = getNumericChartPoints(node['c:yVal'])
+    const sizePoints = isBubble ? getNumericChartPoints(node['c:bubbleSize']) : null
+    const values = []
+    for (const pointIndex of [...xPoints.keys()].sort((a, b) => a - b)) {
+      if (!yPoints.has(pointIndex) || (isBubble && !sizePoints.has(pointIndex))) continue
+      const point = { x: xPoints.get(pointIndex), y: yPoints.get(pointIndex) }
+      if (isBubble) point.size = sizePoints.get(pointIndex)
+      values.push(point)
+    }
+    series.push({ key: getChartSeriesName(node, index), values })
+    return ''
+  })
+  return series
+}
+
+function getSingleChartInfo(key, node, warpObj) {
+  switch (key) {
+    case 'c:lineChart':
+      return {
+        type: 'lineChart',
+        data: extractChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser'], warpObj),
+        grouping: getTextByPathList(node, ['c:grouping', 'attrs', 'val']),
+        marker: node['c:marker'] ? true : false,
+      }
+    case 'c:line3DChart':
+      return {
+        type: 'line3DChart',
+        data: extractChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser'], warpObj),
+        grouping: getTextByPathList(node, ['c:grouping', 'attrs', 'val']),
+      }
+    case 'c:barChart':
+      return {
+        type: 'barChart',
+        data: extractChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser'], warpObj),
+        grouping: getTextByPathList(node, ['c:grouping', 'attrs', 'val']),
+        barDir: getTextByPathList(node, ['c:barDir', 'attrs', 'val']),
+      }
+    case 'c:bar3DChart':
+      return {
+        type: 'bar3DChart',
+        data: extractChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser'], warpObj),
+        grouping: getTextByPathList(node, ['c:grouping', 'attrs', 'val']),
+        barDir: getTextByPathList(node, ['c:barDir', 'attrs', 'val']),
+      }
+    case 'c:pieChart':
+      return {
+        type: 'pieChart',
+        data: extractChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser']['c:dPt'], warpObj),
+      }
+    case 'c:pie3DChart':
+      return {
+        type: 'pie3DChart',
+        data: extractChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser']['c:dPt'], warpObj),
+      }
+    case 'c:doughnutChart':
+      return {
+        type: 'doughnutChart',
+        data: extractChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser']['c:dPt'], warpObj),
+        holeSize: getTextByPathList(node, ['c:holeSize', 'attrs', 'val']),
+      }
+    case 'c:areaChart':
+      return {
+        type: 'areaChart',
+        data: extractChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser'], warpObj),
+        grouping: getTextByPathList(node, ['c:grouping', 'attrs', 'val']),
+      }
+    case 'c:area3DChart':
+      return {
+        type: 'area3DChart',
+        data: extractChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser'], warpObj),
+        grouping: getTextByPathList(node, ['c:grouping', 'attrs', 'val']),
+      }
+    case 'c:scatterChart':
+      return {
+        type: 'scatterChart',
+        data: extractScatterChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser'], warpObj),
+        style: getTextByPathList(node, ['c:scatterStyle', 'attrs', 'val']),
+      }
+    case 'c:bubbleChart':
+    {
+      const chart = {
+        type: 'bubbleChart',
+        data: extractScatterChartData(node['c:ser'], true),
+        colors: extractChartColors(node['c:ser'], warpObj),
+      }
+      const scale = getTextByPathList(node, ['c:bubbleScale', 'attrs', 'val'])
+      if (scale !== undefined && scale !== null && scale !== '' && Number.isFinite(Number(scale))) chart.bubbleScale = Number(scale)
+      const showNegative = getTextByPathList(node, ['c:showNegBubbles', 'attrs', 'val'])
+      if (showNegative !== undefined) chart.showNegBubbles = showNegative === '1' || showNegative === 'true'
+      const sizeRepresents = getTextByPathList(node, ['c:sizeRepresents', 'attrs', 'val'])
+      if (sizeRepresents) chart.sizeRepresents = sizeRepresents
+      return chart
+    }
+    case 'c:radarChart':
+      return {
+        type: 'radarChart',
+        data: extractChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser'], warpObj),
+        style: getTextByPathList(node, ['c:radarStyle', 'attrs', 'val']),
+      }
+    case 'c:surfaceChart':
+      return {
+        type: 'surfaceChart',
+        data: extractChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser'], warpObj),
+      }
+    case 'c:surface3DChart':
+      return {
+        type: 'surface3DChart',
+        data: extractChartData(node['c:ser']),
+        colors: extractChartColors(node['c:ser'], warpObj),
+      }
+    case 'c:stockChart':
+      return {
+        type: 'stockChart',
+        data: extractChartData(node['c:ser']),
+        colors: [],
+      }
+    default:
+      return null
   }
-
-  return dataMat
 }
 
 export function getChartInfo(plotArea, warpObj) {
-  let chart = null
-  for (const key in plotArea) {
-    if (!plotArea[key]['c:ser']) continue
-
-    switch (key) {
-      case 'c:lineChart':
-        chart = {
-          type: 'lineChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser'], warpObj),
-          grouping: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']),
-          marker: plotArea[key]['c:marker'] ? true : false,
-        }
-        break
-      case 'c:line3DChart':
-        chart = {
-          type: 'line3DChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser'], warpObj),
-          grouping: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']),
-        }
-        break
-      case 'c:barChart':
-        chart = {
-          type: 'barChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser'], warpObj),
-          grouping: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']),
-          barDir: getTextByPathList(plotArea[key], ['c:barDir', 'attrs', 'val']),
-        }
-        break
-      case 'c:bar3DChart':
-        chart = {
-          type: 'bar3DChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser'], warpObj),
-          grouping: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']),
-          barDir: getTextByPathList(plotArea[key], ['c:barDir', 'attrs', 'val']),
-        }
-        break
-      case 'c:pieChart':
-        chart = {
-          type: 'pieChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser']['c:dPt'], warpObj),
-        }
-        break
-      case 'c:pie3DChart':
-        chart = {
-          type: 'pie3DChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser']['c:dPt'], warpObj),
-        }
-        break
-      case 'c:doughnutChart':
-        chart = {
-          type: 'doughnutChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser']['c:dPt'], warpObj),
-          holeSize: getTextByPathList(plotArea[key], ['c:holeSize', 'attrs', 'val']),
-        }
-        break
-      case 'c:areaChart':
-        chart = {
-          type: 'areaChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser'], warpObj),
-          grouping: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']),
-        }
-        break
-      case 'c:area3DChart':
-        chart = {
-          type: 'area3DChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser'], warpObj),
-          grouping: getTextByPathList(plotArea[key], ['c:grouping', 'attrs', 'val']),
-        }
-        break
-      case 'c:scatterChart':
-        chart = {
-          type: 'scatterChart',
-          data: extractScatterChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser'], warpObj),
-          style: getTextByPathList(plotArea[key], ['c:scatterStyle', 'attrs', 'val']),
-        }
-        break
-      case 'c:bubbleChart':
-        chart = {
-          type: 'bubbleChart',
-          data: extractScatterChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser'], warpObj),
-        }
-        break
-      case 'c:radarChart':
-        chart = {
-          type: 'radarChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser'], warpObj),
-          style: getTextByPathList(plotArea[key], ['c:radarStyle', 'attrs', 'val']),
-        }
-        break
-      case 'c:surfaceChart':
-        chart = {
-          type: 'surfaceChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser'], warpObj),
-        }
-        break
-      case 'c:surface3DChart':
-        chart = {
-          type: 'surface3DChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: extractChartColors(plotArea[key]['c:ser'], warpObj),
-        }
-        break
-      case 'c:stockChart':
-        chart = {
-          type: 'stockChart',
-          data: extractChartData(plotArea[key]['c:ser']),
-          colors: [],
-        }
-        break
-      default:
+  const nodes = []
+  for (const [key, value] of Object.entries(plotArea || {})) {
+    for (const node of Array.isArray(value) ? value : [value]) {
+      if (node && node['c:ser']) nodes.push({ key, node })
     }
   }
+  nodes.sort((a, b) => {
+    const aOrder = getTextByPathList(a.node, ['attrs', 'order']) || 0
+    const bOrder = getTextByPathList(b.node, ['attrs', 'order']) || 0
+    return aOrder - bOrder
+  })
 
-  return chart
+  const charts = []
+  for (const { key, node } of nodes) {
+    const chart = getSingleChartInfo(key, node, warpObj)
+    if (chart) charts.push({ chart, node })
+  }
+  if (!charts.length) return null
+  if (charts.length === 1) return charts[0].chart
+
+  const groups = charts.map(({ chart, node }) => {
+    const { type, ...properties } = chart
+    const axisIds = []
+    eachElement(node['c:axId'], axis => {
+      const id = getTextByPathList(axis, ['attrs', 'val'])
+      if (id !== undefined) axisIds.push(String(id))
+      return ''
+    })
+    const seriesIndices = []
+    eachElement(node['c:ser'], (series, index) => {
+      const value = Number.parseInt(getTextByPathList(series, ['c:idx', 'attrs', 'val']), 10)
+      seriesIndices.push(Number.isFinite(value) ? value : index)
+      return ''
+    })
+    return { chartType: type, ...properties, axisIds, seriesIndices }
+  })
+  return { type: 'comboChart', groups, colors: groups.flatMap(group => group.colors) }
 }

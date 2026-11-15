@@ -166,6 +166,8 @@ All numeric length values in the output JSON use `pt` (point) as the unit.
 	- Video elements might return `blob` or `src`.
 	- Audio elements only returned `blob`.
 	- Formula images only returned `picBase64`.
+- In version 2.2.0 and earlier:
+	- scatter and bubble chart `data` used two-dimensional arrays.
 
 # 📕 Parsed Properties
 
@@ -191,6 +193,7 @@ All numeric length values in the output JSON use `pt` (point) as the unit.
 		- Type `type`
 		- Duration `duration`
 		- Direction `direction`
+		- Auto-advance delay (milliseconds, optional) `autoNextAfter`
 
 	- Slide elements `elements` / master layout elements `layoutElements`
 		- OOXML ID `id`
@@ -215,6 +218,7 @@ All numeric length values in the output JSON use `pt` (point) as the unit.
 			- Vertical alignment `vAlign`
 			- Whether text wraps automatically `wrap`
 			- Whether it is vertical text `isVertical`
+			- Text direction `textDirection`
 			- Element name `name`
 			- Auto fit `autoFit`
 				- Type `type`
@@ -257,6 +261,7 @@ All numeric length values in the output JSON use `pt` (point) as the unit.
 			- Fill (color, image, gradient, pattern) `fill`
 			- Stroke only (no fill) `strokeOnly`
 			- Text content (HTML rich text, same as text elements) `content`
+			- Text direction (same as text elements, independent of `rotate`) `textDirection`
 			- Vertical flip `isFlipV`
 			- Horizontal flip `isFlipH`
 			- Rotation angle `rotate`
@@ -293,6 +298,7 @@ All numeric length values in the output JSON use `pt` (point) as the unit.
 			- Chart data `data`
 			- Chart theme colors `colors`
 			- Chart type `chartType`
+			- Combination chart groups (for `chartType='comboChart'`, replacing top-level `data`) `groups`
 			- Bar chart direction `barDir`
 			- Whether markers are enabled `marker`
 			- Doughnut chart hole size `holeSize`
@@ -326,8 +332,8 @@ All numeric length values in the output JSON use `pt` (point) as the unit.
 			- Formula image reference path `picRef`
 			- Formula image base64 `picBase64`
 			- Formula image blob `picBlob`
-			- LaTeX expression (only common structures are supported) `latex`
-			- Text (exists when text and formulas are mixed) `text`
+			- LaTeX expression (string, supports common structures; multiple formulas in one box are combined) `latex`
+			- Text (mixed-content HTML not included in LaTeX) `text`
 
 		- SmartArt
 			- Type `type='diagram'`
