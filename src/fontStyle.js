@@ -112,6 +112,12 @@ function resolveScriptTypeface(typeface, script, type, warpObj) {
   return resolved ? decodeXmlEntities(resolved) : ''
 }
 
+export function getFontLanguage(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl, defaultTextStyle) {
+  const styles = getFontStyleNodes(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl)
+  appendDefaultTextStyleNodes(styles, lvl, defaultTextStyle)
+  return getFontAttr(styles, 'lang')
+}
+
 export function getFontFamilies(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl, warpObj) {
   const styles = getFontStyleNodes(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl)
   const latin = resolveScriptTypeface(getScriptTypeface(styles, 'a:latin'), 'a:latin', type, warpObj)

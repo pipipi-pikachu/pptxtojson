@@ -3,6 +3,7 @@ import { decodeXmlEntities, escapeHtml, getResourcesForSource, getTextByPathList
 
 import {
   getFontFamilies,
+  getFontLanguage,
   getFontColor,
   getFontSize,
   getFontBold,
@@ -37,7 +38,7 @@ function scriptFontContent(styleInfo, value) {
   if (!families.eastAsian || families.eastAsian === families.latin) return value
   const tokens = value.match(/&(?:#[xX][0-9a-fA-F]+|#\d+|[a-zA-Z][a-zA-Z0-9]*);|[\s\S]/gu) || []
   const scripts = tokens.map(characterScript)
-  let currentScript = scripts.find(Boolean) || 'latin'
+  let currentScript = scripts.find(Boolean) || (/^(zh|ja|ko)(-|$)/i.test(styleInfo.fontLanguage) ? 'eastAsian' : 'latin')
   const pieces = []
   for (let i = 0; i < tokens.length; i++) {
     currentScript = scripts[i] || currentScript
@@ -46,7 +47,6 @@ function scriptFontContent(styleInfo, value) {
     if (previous && previous.family === family) previous.value += tokens[i]
     else pieces.push({ family, value: tokens[i] })
   }
-  if (pieces.every(piece => piece.family === families.latin)) return value
   const children = pieces.map(piece => {
     const cssFamily = cssFontFamily(piece.family)
     return `<span style="${escapeHtml('font-family: ' + cssFamily + ';')}">${piece.value}</span>`
@@ -95,6 +95,13 @@ export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, slideMaster
 
   const listStyleType = type === 'obj' && getTextByPathList(spNode, ['p:nvSpPr', 'p:nvPr', 'p:ph']) ? 'body' : type
   const listStack = []
+  const compareListPosition = (entry, level, marginLeft, explicitMargin) => {
+    if (entry.marginLeft !== undefined && marginLeft !== undefined) {
+      const difference = entry.marginLeft - marginLeft
+      if (difference || entry.level === level || entry.explicitMargin || explicitMargin) return difference
+    }
+    return entry.level - level
+  }
   const closeList = () => {
     const closed = listStack.pop()
     text += `</li></${closed.type}>`
@@ -120,6 +127,9 @@ export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, slideMaster
     const listInfo = getParagraphListInfo(pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, listStyleType, slideMasterTextStyles, warpObj)
     const listType = listInfo.type
     const listLevel = Math.max(0, getListLevel(pNode))
+    const parsedMarginLeft = parseFloat(indent?.marginLeft)
+    const listMarginLeft = Number.isFinite(parsedMarginLeft) ? parsedMarginLeft : undefined
+    const explicitListMargin = getTextByPathList(pNode, ['a:pPr', 'attrs', 'marL']) !== undefined
 
     const noWrap = getTextByPathList(textBodyNode, ['a:bodyPr', 'attrs', 'wrap']) === 'none'
     let styleText = `text-align: ${align};white-space: ${noWrap ? 'pre' : 'pre-wrap'};tab-size: 4;`
@@ -134,17 +144,17 @@ export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, slideMaster
     }
 
     if (listType) {
-      while (listStack.length && listStack[listStack.length - 1].level > listLevel) closeList()
+      while (listStack.length && compareListPosition(listStack[listStack.length - 1], listLevel, listMarginLeft, explicitListMargin) > 0) closeList()
       let previous = listStack[listStack.length - 1]
-      if (previous && previous.level === listLevel && previous.signature !== listInfo.signature) {
+      if (previous && compareListPosition(previous, listLevel, listMarginLeft, explicitListMargin) === 0 && previous.signature !== listInfo.signature) {
         closeList()
         previous = listStack[listStack.length - 1]
       }
-      const sameList = previous && previous.level === listLevel
+      const sameList = previous && compareListPosition(previous, listLevel, listMarginLeft, explicitListMargin) === 0
       if (sameList) text += '</li>'
       else {
         text += listOpening(listInfo)
-        listStack.push({ type: listType, level: listLevel, signature: listInfo.signature })
+        listStack.push({ type: listType, level: listLevel, marginLeft: listMarginLeft, explicitMargin: explicitListMargin, signature: listInfo.signature })
       }
       const itemValue = sameList && listType === 'ol' && listInfo.explicitStart ? ` value="${listInfo.start}"` : ''
       text += `<li${itemValue} data-pptx-level="${listLevel}"><p style="${styleText}">`
@@ -159,10 +169,10 @@ export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, slideMaster
     }
     else {
       let prevStyleInfo = null
-      let accumulatedText = ''
+      let accumulatedContent = ''
       const flushText = () => {
-        if (accumulatedText && prevStyleInfo) text += renderStyledSpan(prevStyleInfo, accumulatedText)
-        accumulatedText = ''
+        if (accumulatedContent && prevStyleInfo) text += `<span style="${prevStyleInfo.styleText}">${accumulatedContent}</span>`
+        accumulatedContent = ''
         prevStyleInfo = null
       }
 
@@ -180,7 +190,7 @@ export function genTextBody(textBodyNode, spNode, slideLayoutSpNode, slideMaster
         else {
           if (prevStyleInfo && (prevStyleInfo.styleText !== styleInfo.styleText || prevStyleInfo.fontFamilies.eastAsian !== styleInfo.fontFamilies.eastAsian)) flushText()
           prevStyleInfo = styleInfo
-          accumulatedText += styleInfo.text
+          accumulatedContent += scriptFontContent(styleInfo, styleInfo.text)
         }
       }
       flushText()
@@ -233,6 +243,7 @@ export function getSpanStyleInfo(node, pNode, textBodyNode, pFontStyle, slideLay
   const fontColor = getFontColor(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl, pFontStyle, warpObj)
   const fontSize = getFontSize(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl, defaultTextStyle)
   const fontFamilies = getFontFamilies(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl, warpObj)
+  const fontLanguage = getFontLanguage(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl, defaultTextStyle)
   const fontType = fontFamilies.latin
   const fontBold = getFontBold(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl)
   const fontItalic = getFontItalic(node, pNode, textBodyNode, slideLayoutSpNode, slideMasterSpNode, type, slideMasterTextStyles, lvl)
@@ -270,6 +281,7 @@ export function getSpanStyleInfo(node, pNode, textBodyNode, pFontStyle, slideLay
     styleText,
     text,
     fontFamilies,
+    fontLanguage,
     hasLink,
     linkURL: hasLink ? resource.target : null
   }

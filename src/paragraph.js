@@ -191,7 +191,25 @@ export function getParagraphListInfo(pNode, textBodyNode, slideLayoutSpNode, sli
   for (const style of styleNodes) {
     if (style['a:buNone'] || style['a:buBlip']) return { type: '' }
     if (style['a:buChar']) {
-      const marker = decodeXmlEntities(getTextByPathList(style, ['a:buChar', 'attrs', 'char']) || '•')
+      let marker = decodeXmlEntities(getTextByPathList(style, ['a:buChar', 'attrs', 'char']) || '•')
+      let bulletFont
+      for (const candidate of styleNodes) {
+        if (candidate['a:buFontTx']) break
+        const font = getTextByPathList(candidate, ['a:buFont', 'attrs'])
+        if (font) {
+          bulletFont = font
+          break
+        }
+      }
+      const fontName = decodeXmlEntities(bulletFont?.typeface || '')
+      const symbolFont = bulletFont?.charset === '2' || /wingdings|webdings|^symbol$/i.test(fontName)
+      const unsupportedCharacter = [...marker].some(character => {
+        const code = character.codePointAt(0)
+        return code < 32 || (code >= 127 && code <= 159) || code === 0xfffd ||
+          (code >= 0xe000 && code <= 0xf8ff) || (code >= 0xf0000 && code <= 0xffffd) ||
+          (code >= 0x100000 && code <= 0x10fffd)
+      })
+      if (symbolFont || unsupportedCharacter) marker = '•'
       return { type: 'ul', marker, signature: 'ul:' + marker }
     }
     if (style['a:buAutoNum']) {
